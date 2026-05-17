@@ -1,4 +1,23 @@
+# Node
 node_modules/
+npm-debug.log*
+
+# Build
 dist/
+dist-ssr/
+*.local
+
+# Env
 .env.local
+.env.*.local
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# macOS
 .DS_Store
+
+# Vite
+vite.config.js.timestamp-*
