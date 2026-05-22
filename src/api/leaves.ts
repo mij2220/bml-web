@@ -37,3 +37,5 @@ export const getMyBalances = (employeeId: string, year?: number) =>
   client.get<ApiResponse<LeaveBalance[]>>(`/employees/${employeeId}/balances/`, {
     params: year ? { year } : {}
   })
+
+export const updateLeave = (id: string, data: any) => client.patch(`/leaves/${id}/`, data)

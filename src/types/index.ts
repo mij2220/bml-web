@@ -61,6 +61,12 @@ export interface LeaveApplication {
   applied_at: string
   current_approval_level: number
   reason?: string
+  contact_during_leave?: string
+  address_during_leave?: string
+  duty_date_for_cd?: string
+  leave_type_code?: string
+  employee_id_code?: string
+  department?: string
   approvals?: Approval[]
 }
 
