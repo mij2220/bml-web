@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import client from '../../api/client'
 import { BarChart3, Download, Calendar, Users, TrendingUp, Clock, RefreshCw } from 'lucide-react'
-import { downloadCSV } from '../../utils/tableUtils'
 
 interface SummaryRow { employee_name: string; employee_id: string; department: string; leave_type: string; total_days: number; status: string }
 
@@ -109,26 +108,16 @@ function TOILTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
         data={TOIL_DEMO.map((r, i) => ({ label: r.name.split(' ')[0], value: r.earned, color: ['#f59e0b','#3b82f6','#10b981','#8b5cf6','#ef4444'][i] }))}
       />
       <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-slate-100 flex justify-end">
-          <button onClick={handleToilDownload}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 font-medium">
-            <Download size={13} /> Download CSV
-          </button>
-        </div>
         <table className="w-full">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              {([['Employee','name'],['Department','dept'],['OT Earned','earned'],['TOIL Used','used'],['Balance','balance']] as [string,string][]).map(([h,col]) => (
-                <th key={h} onClick={() => toggleToilSort(col)}
-                  className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">
-                  {h}<span className="text-slate-300 ml-1 text-xs">{toilSortKey===col?(toilSortDir==='asc'?'↑':'↓'):'↕'}</span>
-                </th>
+              {['Employee','Department','OT Earned','TOIL Used','Balance','Status'].map(h => (
+                <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">{h}</th>
               ))}
-              <th className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {sortedToil.map((r: any) => (
+            {TOIL_DEMO.map(r => (
               <tr key={r.id} className="hover:bg-slate-50">
                 <td className="px-4 py-3"><p className="text-sm font-semibold text-slate-900">{r.name}</p><p className="text-xs text-slate-400 font-mono">{r.id}</p></td>
                 <td className="px-4 py-3 text-sm text-slate-600">{r.dept}</td>
@@ -279,25 +268,6 @@ export default function ReportsPage() {
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-01`
   })
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0])
-  const [toilSortKey, setToilSortKey] = useState<string | null>(null)
-  const [toilSortDir, setToilSortDir] = useState<'asc'|'desc'|null>('asc')
-  const toggleToilSort = (col: string) => {
-    if (toilSortKey === col) { if (toilSortDir==='asc') setToilSortDir('desc'); else { setToilSortKey(null); setToilSortDir('asc') } }
-    else { setToilSortKey(col); setToilSortDir('asc') }
-  }
-  const sortedToil = [...TOIL_DEMO].sort((a: any, b: any) => {
-    if (!toilSortKey || !toilSortDir) return 0
-    const av = a[toilSortKey], bv = b[toilSortKey]
-    if (av == null) return 1; if (bv == null) return -1
-    const cmp = typeof av==='number'&&typeof bv==='number' ? av-bv : String(av).localeCompare(String(bv),undefined,{numeric:true})
-    return toilSortDir==='asc' ? cmp : -cmp
-  })
-  const handleToilDownload = () => {
-    downloadCSV('toil-report.csv',
-      ['Employee', 'ID', 'Department', 'OT Earned (h)', 'TOIL Used (h)', 'Balance (h)'],
-      sortedToil.map((r: any) => [r.name, r.id, r.dept, r.earned, r.used, r.balance])
-    )
-  }
 
   useEffect(() => {
     document.getElementById('page-title')!.textContent = 'Reports'

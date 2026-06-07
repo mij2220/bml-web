@@ -21,7 +21,7 @@ interface ApiData {
   employees: EmployeeRow[]
 }
 
-type SortKey = 'full_name' | 'department' | 'experience_tier' | 'experience_years' | string
+// type SortKey = 'full_name' | 'department' | 'experience_tier' | 'experience_years' | string
 
 function SortTh({ label, col, sortKey, sortDir, onSort, className = '' }: {
   label: string; col: string; sortKey: string | null

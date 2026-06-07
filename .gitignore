@@ -21,3 +21,5 @@ dist-ssr/
 
 # Vite
 vite.config.js.timestamp-*
+*.bak_*
+.github/

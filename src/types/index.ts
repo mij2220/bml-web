@@ -48,10 +48,10 @@ export interface LeaveApplication {
   id: string
   reference_number: string
   employee_name: string
-  employee_id_code: string
-  department: string
+  employee_id_code?: string
+  department?: string
   leave_type_name: string
-  leave_type_code: string
+  leave_type_code?: string
   leave_type_color: string
   start_date: string
   end_date: string
@@ -64,9 +64,6 @@ export interface LeaveApplication {
   contact_during_leave?: string
   address_during_leave?: string
   duty_date_for_cd?: string
-  leave_type_code?: string
-  employee_id_code?: string
-  department?: string
   approvals?: Approval[]
 }
 
