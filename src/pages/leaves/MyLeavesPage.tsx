@@ -1,3 +1,4 @@
+import { downloadCSV } from '../../utils/tableUtils'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMyLeaves, cancelLeave, getLeaveDetail } from '../../api/leaves'
@@ -255,11 +256,15 @@ export default function MyLeavesPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const params: Record<string, string> = {}
+      const params: Record<string, string> = { page_size: '200' }
       if (statusFilter) params.status = statusFilter
       if (search) params.search = search
       const { data } = await getMyLeaves(params)
-      setLeaves(data.data ?? [])
+      // Handle both paginated {results:[]} and plain array responses
+      const items = Array.isArray(data.data)
+        ? data.data
+        : (data.data as any)?.results ?? []
+      setLeaves(items)
     } catch {}
     setLoading(false)
   }
