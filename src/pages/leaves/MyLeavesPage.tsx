@@ -57,24 +57,7 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                   {leave.status}
                 </span>
                 <button
-                  onClick={() => generateLeavePdf({
-                    reference_number: leave.reference_number || '',
-                    employee_name: leave.employee_name || '',
-                    employee_id_code: leave.employee_id_code,
-                    department: leave.department,
-                    leave_type_name: leave.leave_type_name || '',
-                    leave_type_code: leave.leave_type_code || '',
-                    start_date: leave.start_date,
-                    end_date: leave.end_date,
-                    total_days: leave.total_days,
-                    reason: leave.reason || '',
-                    contact_during_leave: leave.contact_during_leave,
-                    address_during_leave: leave.address_during_leave,
-                    duty_date_for_cd: leave.duty_date_for_cd,
-                    status: leave.status,
-                    applied_at: leave.applied_at || '',
-                    approvals: leave.approvals,
-                  })}
+                  
                   className="mt-2 flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors"
                   onClick={async (e) => {
                     e.stopPropagation()
