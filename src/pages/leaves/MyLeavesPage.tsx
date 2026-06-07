@@ -1,10 +1,10 @@
 import { downloadCSV } from '../../utils/tableUtils'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import client from '../../api/client'
 import { getMyLeaves, cancelLeave, getLeaveDetail } from '../../api/leaves'
 import { Plus, Eye, XCircle, ChevronRight } from 'lucide-react'
 import type { LeaveApplication } from '../../types'
-import { generateLeavePdf } from '../../utils/leavePdf'
 
 const statusColor: Record<string, string> = {
   pending:  'bg-amber-100 text-amber-700 border border-amber-200',
