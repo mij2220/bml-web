@@ -58,9 +58,13 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                 </span>
                 <button
                   
-                  className="mt-2 flex items-center gap-1.5 text-xs bg-white/10 hover:bg-white/20 text-white px-3 py-1.5 rounded-lg transition-colors"
+                  className="mt-2 flex items-center gap-1.5 text-xs bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-all font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
                   onClick={async (e) => {
                     e.stopPropagation()
+                    const btn = e.currentTarget
+                    btn.disabled = true
+                    const orig = btn.innerHTML
+                    btn.innerHTML = '<svg class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Generating...'
                     try {
                       const resp = await client.get(`/leaves/${leave.id}/pdf/`, { responseType: 'blob' })
                       const url = window.URL.createObjectURL(new Blob([resp.data], { type: 'application/pdf' }))
@@ -71,7 +75,13 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                       a.click()
                       document.body.removeChild(a)
                       window.URL.revokeObjectURL(url)
-                    } catch { alert('Failed to download PDF') }
+                      btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Downloaded!'
+                      setTimeout(() => { btn.innerHTML = orig; btn.disabled = false }, 2000)
+                    } catch {
+                      btn.innerHTML = orig
+                      btn.disabled = false
+                      alert('Failed to download PDF. Please try again.')
+                    }
                   }}
                 >
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
