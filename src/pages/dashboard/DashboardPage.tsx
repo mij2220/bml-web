@@ -107,11 +107,19 @@ export default function DashboardPage() {
             {balances.map(b => {
               const avail = parseFloat(b.available), alloc = parseFloat(b.allocated)
               const pct = alloc > 0 ? Math.min(100, (avail / alloc) * 100) : 0
+              const splitsUsed = (b as any).splits_used ?? 0
+              const splitsAllowed = (b as any).splits_allowed ?? 0
+              const hasSplits = splitsAllowed > 0
               return (
                 <div key={b.leave_type_id} className="bg-white rounded-2xl border border-slate-200 p-3">
                   <p className="text-xs text-slate-500 truncate">{b.leave_type_code}</p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">{avail.toFixed(0)}</p>
                   <p className="text-xs text-slate-400">of {alloc.toFixed(0)}d</p>
+                  {hasSplits && (
+                    <p className="text-xs font-medium mt-0.5" style={{ color: splitsUsed >= splitsAllowed ? '#ef4444' : '#10b981' }}>
+                      {splitsUsed}/{splitsAllowed} splits
+                    </p>
+                  )}
                   <div className="mt-2 h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${pct}%` }} />
                   </div>
