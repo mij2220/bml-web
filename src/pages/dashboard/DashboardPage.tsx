@@ -105,13 +105,15 @@ export default function DashboardPage() {
         ) : (
           <div className="grid grid-cols-3 md:grid-cols-5 gap-2 md:gap-3">
             {balances.map(b => {
-              const avail = parseFloat(b.available), alloc = parseFloat(b.allocated)
+              // /me/balances uses remaining_days/allocated_days; /id/balances uses available/allocated
+              const avail = parseFloat((b as any).remaining_days ?? (b as any).available ?? '0')
+              const alloc = parseFloat((b as any).allocated_days ?? (b as any).allocated ?? '0')
               const pct = alloc > 0 ? Math.min(100, (avail / alloc) * 100) : 0
               const splitsUsed = (b as any).splits_used ?? 0
               const splitsAllowed = (b as any).splits_allowed ?? 0
               const hasSplits = splitsAllowed > 0
               return (
-                <div key={b.leave_type_id} className="bg-white rounded-2xl border border-slate-200 p-3">
+                <div key={(b as any).leave_type_id ?? (b as any).leave_type} className="bg-white rounded-2xl border border-slate-200 p-3">
                   <p className="text-xs text-slate-500 truncate">{b.leave_type_code}</p>
                   <p className="text-2xl font-bold text-slate-900 mt-1">{avail.toFixed(0)}</p>
                   <p className="text-xs text-slate-400">of {alloc.toFixed(0)}d</p>
