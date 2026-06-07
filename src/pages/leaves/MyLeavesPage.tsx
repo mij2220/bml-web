@@ -257,7 +257,7 @@ export default function MyLeavesPage() {
   const load = async () => {
     setLoading(true)
     try {
-      const params: Record<string, string> = { page_size: '200' }
+      const params: Record<string, string> = { page_size: '200', mine: 'true' }
       if (statusFilter) params.status = statusFilter
       if (search) params.search = search
       const { data } = await getMyLeaves(params)
