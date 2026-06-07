@@ -257,6 +257,7 @@ export default function ApprovalsPage() {
     approved: 'bg-emerald-100 text-emerald-700',
     rejected: 'bg-red-100 text-red-700',
     cancelled: 'bg-slate-100 text-slate-500',
+    expired:   'bg-orange-100 text-orange-700',
   }
 
   if (loading) return (
