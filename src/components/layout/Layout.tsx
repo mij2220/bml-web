@@ -7,8 +7,8 @@ import { getNotificationCount } from '../../api/notifications'
 import {
   LayoutDashboard, CalendarDays, Clock, FileText, Users,
   Settings, LogOut, Bell, Menu, X, ClipboardList,
-  BarChart3, Building2, BookOpen, RefreshCw, UserCircle,
-  Globe, Timer, Layers, Megaphone, ScrollText, CreditCard,
+  BarChart3, Building2, BookOpen, RefreshCw,
+  Timer, Megaphone, ScrollText, CreditCard,
   Trees, FolderOpen, Building
 } from 'lucide-react'
 
@@ -114,11 +114,6 @@ export default function Layout() {
           {navItem('/apply-leave',  FileText,        'Apply for Leave')}
           {navItem('/calendar',     CalendarDays,    'Team Calendar')}
 
-          {/* ATTENDANCE */}
-          {sectionLabel('Attendance')}
-          {navItem('/clock',        Clock,           'Clock In / Out')}
-          {navItem('/timesheets',   ClipboardList,   'Timesheets')}
-
           {/* REPLACEMENTS */}
           {sectionLabel('Replacements')}
           {navItem('/replacements', RefreshCw,       'My Replacements')}
@@ -132,6 +127,11 @@ export default function Layout() {
               {navItem('/team-balances', BarChart3,     'Team Balances')}
             </>
           )}
+
+          {/* ATTENDANCE */}
+          {sectionLabel('Attendance')}
+          {navItem('/clock',        Clock,           'Clock In / Out')}
+          {navItem('/timesheets',   ClipboardList,   'Timesheets')}
 
           {/* HR ADMIN */}
           {isHR && (
