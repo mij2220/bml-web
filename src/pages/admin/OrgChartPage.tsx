@@ -9,13 +9,22 @@ interface OrgNode {
 
 function buildTree(employees: Employee[]): OrgNode[] {
   const map: Record<string, OrgNode> = {}
-  employees.forEach(e => { map[e.id] = { emp: e, children: [] } })
+  const nameMap: Record<string, string> = {} // full_name → id
+
+  employees.forEach(e => {
+    map[e.id] = { emp: e, children: [] }
+    nameMap[e.full_name] = e.id
+  })
 
   const roots: OrgNode[] = []
   employees.forEach(e => {
-    const mgr = (e as any).reporting_manager_id || (e as any).reporting_manager?.id
-    if (mgr && map[mgr]) {
-      map[mgr].children.push(map[e.id])
+    // Try reporting_manager_id first (added to API), fall back to manager_name lookup
+    const mgrId = (e as any).reporting_manager_id
+    const mgrName = (e as any).manager_name
+    const resolvedId = mgrId || (mgrName ? nameMap[mgrName] : null)
+
+    if (resolvedId && map[resolvedId] && resolvedId !== e.id) {
+      map[resolvedId].children.push(map[e.id])
     } else {
       roots.push(map[e.id])
     }
