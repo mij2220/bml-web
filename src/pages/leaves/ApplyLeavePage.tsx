@@ -54,6 +54,8 @@ export default function ApplyLeavePage() {
     api.get("/leave-types/").then(res => {
       const data = unwrapList(res) as LeaveType[];
       setLeaveTypes(data.filter(t => t.is_active !== false));
+      // Fetch employees for SIC dropdown
+      getEmployees().then(r => setEmployees(r.data?.data ?? [])).catch(() => {});
     }).catch(() => {});
 
     api.get("/employees/me/balances/").then(res => {
@@ -113,6 +115,7 @@ export default function ApplyLeavePage() {
     try {
       const payload: Record<string, unknown> = {
         leave_type_id: selectedTypeId,
+        ...(shiftInchargeId && { shift_incharge_id: shiftInchargeId }),
         start_date: startDate,
         end_date: endDate,
         reason,
