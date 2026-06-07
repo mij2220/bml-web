@@ -165,7 +165,7 @@ export default function ApprovalsPage() {
       const params: Record<string, string> = {}
       if (status) params.status = status
       const res = await getMyLeaves(params)
-      const all: LeaveApplication[] = res.data.data?.results ?? res.data.data ?? []
+      const all: LeaveApplication[] = res.data?.data ?? []
       setHistory(all.filter(l => l.status !== 'pending'))
     } catch {}
     setHistoryLoading(false)

@@ -7,10 +7,11 @@ import type { LeaveApplication } from '../../types'
 import { generateLeavePdf } from '../../utils/leavePdf'
 
 const statusColor: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700 border border-amber-200',
+  pending:  'bg-amber-100 text-amber-700 border border-amber-200',
   approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
   rejected: 'bg-red-100 text-red-700 border border-red-200',
-  cancelled: 'bg-slate-100 text-slate-500 border border-slate-200',
+  cancelled:'bg-slate-100 text-slate-500 border border-slate-200',
+  expired:  'bg-orange-100 text-orange-700 border border-orange-200',
 }
 
 function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
@@ -324,7 +325,7 @@ export default function MyLeavesPage() {
       {/* Filters + action */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex gap-1 md:gap-2 flex-wrap flex-1">
-          {['', 'pending', 'approved', 'rejected', 'cancelled'].map(s => (
+          {['', 'pending', 'approved', 'rejected', 'cancelled', 'expired'].map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
