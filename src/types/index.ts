@@ -34,14 +34,23 @@ export interface LeaveType {
 }
 
 export interface LeaveBalance {
-  leave_type_id: string
+  // From /employees/{id}/balances/
+  leave_type_id?: string
   leave_type_name: string
   leave_type_code: string
   year: number
-  allocated: string
-  used: string
-  carried_over: string
-  available: string
+  allocated?: string
+  used?: string
+  carried_over?: string
+  available?: string
+  // From /employees/me/balances/ (includes splits)
+  leave_type?: string
+  leave_type_color?: string
+  remaining_days?: string
+  allocated_days?: string
+  used_days?: string
+  splits_used?: number
+  splits_allowed?: number
 }
 
 export interface LeaveApplication {

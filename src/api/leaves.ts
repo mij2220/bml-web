@@ -33,6 +33,11 @@ export const getPendingApprovals = () =>
 export const getTeamCalendar = (month: string) =>
   client.get<ApiResponse<LeaveApplication[]>>('/leaves/calendar/', { params: { month } })
 
+export const getMeBalances = (year?: number) =>
+  client.get<ApiResponse<LeaveBalance[]>>('/employees/me/balances/', {
+    params: year ? { year } : {}
+  })
+
 export const getMyBalances = (employeeId: string, year?: number) =>
   client.get<ApiResponse<LeaveBalance[]>>(`/employees/${employeeId}/balances/`, {
     params: year ? { year } : {}

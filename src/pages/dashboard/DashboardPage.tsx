@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
-import { getMyLeaves, getMyBalances, getPendingApprovals, approveLeave, rejectLeave } from '../../api/leaves'
+import { getMyLeaves, getMyBalances, getMeBalances, getPendingApprovals, approveLeave, rejectLeave } from '../../api/leaves'
 import { getMyProfile } from '../../api/employees'
 import { CalendarDays, ChevronRight, Plus, Clock, AlertCircle, FileText, CheckCircle, XCircle, Users } from 'lucide-react'
 import type { LeaveBalance, LeaveApplication } from '../../types'
@@ -21,7 +21,7 @@ export default function DashboardPage() {
       const profile = await getMyProfile()
       const eid = profile.data.data?.id
       if (eid) {
-        const [bal, leaves] = await Promise.all([getMyBalances(eid), getMyLeaves({ page_size: '5' })])
+        const [bal, leaves] = await Promise.all([getMeBalances(), getMyLeaves({ page_size: '5' })])
         setBalances(bal.data.data ?? [])
         setRecentLeaves(leaves.data.data ?? [])
       }
