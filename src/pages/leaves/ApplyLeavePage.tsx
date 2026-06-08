@@ -46,6 +46,8 @@ export default function ApplyLeavePage() {
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [workingDays, setWorkingDays] = useState<number | null>(null);
+  const [employees, setEmployees] = useState<any[]>([]);
+  const [shiftInchargeId, setShiftInchargeId] = useState("");
 
   const selectedType = leaveTypes.find(t => t.id === selectedTypeId) || null;
   const selectedBalance = balances.find(b => b.leave_type === selectedTypeId) || null;
