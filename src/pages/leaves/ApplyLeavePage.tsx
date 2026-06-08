@@ -55,7 +55,7 @@ export default function ApplyLeavePage() {
       const data = unwrapList(res) as LeaveType[];
       setLeaveTypes(data.filter(t => t.is_active !== false));
       // Fetch employees for SIC dropdown
-      getEmployees().then(r => setEmployees(r.data?.data ?? [])).catch(() => {});
+      api.get('/employees/?page_size=100').then(r => setEmployees((r.data as any)?.data ?? [])).catch(() => {});
     }).catch(() => {});
 
     api.get("/employees/me/balances/").then(res => {
