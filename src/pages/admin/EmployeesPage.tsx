@@ -43,6 +43,7 @@ export default function EmployeesPage() {
 
   const filtered = deptFilter
     ? employees.filter((e: any) => e.department_name === deptFilter)
+    : employees
   const sortedEmployees = [...filtered].sort((a: any, b: any) => {
     if (!sortKey || !sortDir) return 0
     const av = a[sortKey], bv = b[sortKey]
