@@ -591,7 +591,7 @@ export default function ApprovalsPage() {
             const isActioning = actionId === app.id
             const replacementEmp = (app as any).replacement_employee as { id: string; full_name: string } | null | undefined
             const todayStr = new Date().toISOString().slice(0, 10)
-            const isPast = app.end_date <= todayStr
+            const isPast = app.end_date < todayStr
 
             return (
               <div key={app.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
@@ -657,7 +657,7 @@ export default function ApprovalsPage() {
                 {isExpanded && (
                   <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[['Reference', app.reference_number], ['Leave Type', app.leave_type_name], ['Duration', `${app.total_days} days`], ['Approval Level', `Level ${app.current_approval_level}`]].map(([l, v]) => (
+                      {[['Reference', app.reference_number], ['Leave Type', app.leave_type_name], ['Duration', `${app.total_days} days`], ['Approval Level', `Level ${app.current_approval_level}`], ...((app as any).duty_date_for_cd ? [['Date Worked on Rest Day', (app as any).duty_date_for_cd]] : [])].map(([l, v]) => (
                         <div key={l}><p className="text-xs text-slate-400">{l}</p><p className="text-sm font-medium text-slate-900 mt-0.5">{v}</p></div>
                       ))}
                     </div>
