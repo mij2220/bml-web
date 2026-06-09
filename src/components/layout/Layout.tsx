@@ -139,7 +139,7 @@ export default function Layout() {
               {sectionLabel('Admin')}
               {navItem('/employees',         Users,       'Employees')}
               {navItem('/org-chart',         Trees,       'Org Chart')}
-              {navItem('/departments',       Building2,   'Departments')}
+              {navItem('/departments',       Building2,   'Units')}
               {navItem('/leave-types',       Settings,    'Leave Types')}
               {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')}
               {/* HIDDEN: {navItem('/shifts',            Timer,       'Shifts')} */}

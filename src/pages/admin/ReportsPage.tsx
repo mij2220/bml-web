@@ -111,7 +111,7 @@ function TOILTab({ dateFrom, dateTo }: { dateFrom: string; dateTo: string }) {
         <table className="w-full">
           <thead className="bg-slate-50 border-b border-slate-200">
             <tr>
-              {['Employee','Department','OT Earned','TOIL Used','Balance','Status'].map(h => (
+              {['Employee','Unit','OT Earned','TOIL Used','Balance','Status'].map(h => (
                 <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">{h}</th>
               ))}
             </tr>
@@ -401,7 +401,7 @@ export default function ReportsPage() {
                 <table className="w-full">
                   <thead className="bg-slate-50 border-b border-slate-200">
                     <tr>
-                      {['Employee','Department','Leave Type','Days','Status'].map(h=>(
+                      {['Employee','Unit','Leave Type','Days','Status'].map(h=>(
                         <th key={h} className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">{h}</th>
                       ))}
                     </tr>

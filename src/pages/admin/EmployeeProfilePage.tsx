@@ -117,7 +117,7 @@ export default function EmployeeProfilePage() {
   const [editForm, setEditForm] = useState<EditForm>(EMPTY_EDIT);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
-  const [departments, setDepartments] = useState<DropdownOption[]>([]);
+  const [departments, setUnits] = useState<DropdownOption[]>([]);
   const [designations, setDesignations] = useState<DropdownOption[]>([]);
   const [branches, setBranches] = useState<DropdownOption[]>([]);
   const [managers, setManagers] = useState<(DropdownOption & { employee_id: string })[]>([]);
@@ -177,7 +177,7 @@ export default function EmployeeProfilePage() {
         api.get("/branches/"),
         api.get("/employees/?page_size=200"),
       ]);
-      setDepartments(unwrapList(deptRes) as DropdownOption[]);
+      setUnits(unwrapList(deptRes) as DropdownOption[]);
       setDesignations(unwrapList(desigRes) as DropdownOption[]);
       setBranches(unwrapList(branchRes) as DropdownOption[]);
       const allEmps = unwrapList(empRes) as (DropdownOption & { employee_id: string })[];
@@ -338,7 +338,7 @@ export default function EmployeeProfilePage() {
             </div>
             <div className="mt-5 pt-4 border-t border-gray-50 text-left space-y-2.5">
               {[
-                { label: "Department", value: employee.department?.name },
+                { label: "Unit", value: employee.department?.name },
                 { label: "Supervisor (L1)", value: employee.reporting_manager?.full_name || "None" },
                 { label: "Incharge (L2)",  value: (employee as any).shift_incharge?.full_name || "None" },
                 { label: "Type",       value: employee.employment_type },
@@ -391,7 +391,7 @@ export default function EmployeeProfilePage() {
                 <h3 className="text-sm font-semibold text-gray-800 mb-4">Employment Details</h3>
                 <div className="grid grid-cols-2 gap-x-8 gap-y-4">
                   {[
-                    { label: "Department",      value: fmt(employee.department?.name) },
+                    { label: "Unit",      value: fmt(employee.department?.name) },
                     { label: "Designation",     value: fmt(employee.designation?.name) },
                     { label: "Employment Type", value: employee.employment_type?.replace(/_/g, " ") || "—" },
                     { label: "Salary Grade",    value: fmt(employee.salary_grade) },
@@ -539,7 +539,7 @@ export default function EmployeeProfilePage() {
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Employment Details</p>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className={labelCls}>Department</label>
+                    <label className={labelCls}>Unit</label>
                     <select value={editForm.department_id} onChange={set("department_id")} className={inputCls}>
                       <option value="">Select department</option>
                       {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}

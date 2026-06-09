@@ -49,7 +49,7 @@ export default function EmployeesPage() {
 
   const handleDownload = () => {
     downloadCSV('employees.csv',
-      ['Name', 'Email', 'Employee ID', 'Department', 'Designation', 'Role', 'Status'],
+      ['Name', 'Email', 'Employee ID', 'Unit', 'Designation', 'Role', 'Status'],
       sortedEmployees.map((e: any) => [e.full_name, e.email, e.employee_id, e.department_name, e.designation_name, e.role, e.status])
     )
   }
@@ -185,7 +185,7 @@ export default function EmployeesPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {([['Employee','full_name'],['ID','employee_id'],['Department','department_name'],['Designation','designation_name'],['Role','role'],['Status','status']] as [string,string][]).map(([h,col]) => (
+                  {([['Employee','full_name'],['ID','employee_id'],['Unit','department_name'],['Designation','designation_name'],['Role','role'],['Status','status']] as [string,string][]).map(([h,col]) => (
                     <th key={h} onClick={() => toggleSort(col)}
                       className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">
                       {h}

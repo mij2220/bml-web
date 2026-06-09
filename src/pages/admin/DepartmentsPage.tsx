@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getDepartments, getDesignations } from '../../api/employees'
+import { getUnits, getDesignations } from '../../api/employees'
 import client from '../../api/client'
 import { Building2, Users, Plus, ChevronDown, ChevronRight, PowerOff, AlertCircle, Pencil, Trash2, Check, X } from 'lucide-react'
 
@@ -17,8 +17,8 @@ interface Designation {
   grade: string
 }
 
-export default function DepartmentsPage() {
-  const [departments, setDepartments] = useState<Department[]>([])
+export default function UnitsPage() {
+  const [departments, setUnits] = useState<Department[]>([])
   const [designations, setDesignations] = useState<Designation[]>([])
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -34,15 +34,15 @@ export default function DepartmentsPage() {
 
   const load = async () => {
     try {
-      const [depts, desigs] = await Promise.all([getDepartments(), getDesignations()])
-      setDepartments(depts.data.data ?? [])
+      const [depts, desigs] = await Promise.all([getUnits(), getDesignations()])
+      setUnits(depts.data.data ?? [])
       setDesignations(desigs.data.data ?? [])
     } catch {}
     setLoading(false)
   }
 
   useEffect(() => {
-    document.getElementById('page-title')!.textContent = 'Departments'
+    document.getElementById('page-title')!.textContent = 'Units'
     load()
   }, [])
 
@@ -73,7 +73,7 @@ export default function DepartmentsPage() {
       await load()
     } catch {
       // If API doesn't support is_active yet, just remove from local state
-      setDepartments(prev => prev.filter(d => d.id !== dept.id))
+      setUnits(prev => prev.filter(d => d.id !== dept.id))
     }
     setActionId(null)
   }
@@ -129,7 +129,7 @@ export default function DepartmentsPage() {
       <div className="grid grid-cols-3 gap-3">
         <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
           <p className="text-2xl font-bold text-slate-900">{departments.length}</p>
-          <p className="text-xs text-slate-500 mt-1">Departments</p>
+          <p className="text-xs text-slate-500 mt-1">Units</p>
         </div>
         <div className="bg-white rounded-2xl border border-slate-200 p-4 text-center">
           <p className="text-2xl font-bold text-slate-900">{designations.length}</p>
@@ -145,7 +145,7 @@ export default function DepartmentsPage() {
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-start gap-3">
         <AlertCircle size={16} className="text-blue-500 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-blue-700">
-          Departments with active employees cannot be deactivated. Move employees first, then deactivate. History and records are always preserved.
+          Units with active employees cannot be deactivated. Move employees first, then deactivate. History and records are always preserved.
         </p>
       </div>
 

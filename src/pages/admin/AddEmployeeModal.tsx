@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import client from '../../api/client'
-import { getDepartments, getDesignations, getEmployees } from '../../api/employees'
+import { getUnits, getDesignations, getEmployees } from '../../api/employees'
 import { X } from 'lucide-react'
 
 interface Props { onClose: () => void; onCreated: () => void }
@@ -18,7 +18,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
   })
 
   useEffect(() => {
-    Promise.all([getDepartments(), getDesignations(), getEmployees()]).then(([d,des,m]) => {
+    Promise.all([getUnits(), getDesignations(), getEmployees()]).then(([d,des,m]) => {
       setDepts(d.data.data??[])
       setAllDesigs(des.data.data??[])
       setManagers((m.data.data??[]).filter((e:any) => ['manager','hr_admin','super_admin'].includes(e.role)))

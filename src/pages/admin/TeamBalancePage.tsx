@@ -109,7 +109,7 @@ export default function TeamBalancePage() {
   }
 
   const handleDownload = () => {
-    const headers = ['Employee', 'ID', 'Department', 'Tier', 'Experience (yrs)',
+    const headers = ['Employee', 'ID', 'Unit', 'Tier', 'Experience (yrs)',
       ...shownTypes.map(lt => `${lt.code} Available`),
       ...shownTypes.map(lt => `${lt.code} Allocated`)]
     const rows = displayRows.map(e => [
@@ -147,7 +147,7 @@ export default function TeamBalancePage() {
           { label: 'Employees',    value: data.employees.length,                                               color: 'text-slate-900' },
           { label: 'Senior tier',  value: data.employees.filter(e => e.experience_tier === 'senior').length,   color: 'text-emerald-700' },
           { label: 'Junior tier',  value: data.employees.filter(e => e.experience_tier === 'junior').length,   color: 'text-blue-700' },
-          { label: 'Departments',  value: new Set(data.employees.map(e => e.department)).size,                 color: 'text-slate-900' },
+          { label: 'Units',  value: new Set(data.employees.map(e => e.department)).size,                 color: 'text-slate-900' },
         ].map(s => (
           <div key={s.label} className="bg-white rounded-xl border border-slate-200 p-3 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
