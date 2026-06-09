@@ -29,6 +29,8 @@ export default function EmployeesPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>('asc')
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 10
 
   const toggleSort = (col: string) => {
     if (sortKey === col) {
@@ -70,11 +72,14 @@ export default function EmployeesPage() {
   }, [])
 
   useEffect(() => {
+    setPage(1)
     const t = setTimeout(() => load(search), 400)
     return () => clearTimeout(t)
   }, [search])
 
   const active = employees.filter(e => e.status === 'active').length
+  const totalPages = Math.ceil(sortedEmployees.length / PAGE_SIZE)
+  const pagedEmployees = sortedEmployees.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
   const onLeave = employees.filter(e => e.status === 'on_leave').length
 
   return (
@@ -192,7 +197,7 @@ export default function EmployeesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {sortedEmployees.map((emp: any) => (
+                {pagedEmployees.map((emp: any) => (
                   <tr
                     key={emp.id}
                     onClick={() => navigate(`/employees/${emp.id}`)}
