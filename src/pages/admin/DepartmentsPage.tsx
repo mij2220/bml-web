@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getDepartments, getDesignations } from '../../api/employees'
 import client from '../../api/client'
-import { Building2, Users, Plus, ChevronDown, ChevronRight, PowerOff, Power, AlertCircle } from 'lucide-react'
+import { Building2, Users, Plus, ChevronDown, ChevronRight, PowerOff, AlertCircle, Pencil, Trash2, Check, X } from 'lucide-react'
 
 interface Department {
   id: string
@@ -26,6 +26,11 @@ export default function DepartmentsPage() {
   const [newName, setNewName] = useState('')
   const [saving, setSaving] = useState(false)
   const [actionId, setActionId] = useState<string | null>(null)
+  const [showAddDesig, setShowAddDesig] = useState<string | null>(null)  // dept id
+  const [newDesigName, setNewDesigName] = useState('')
+  const [editDesigId, setEditDesigId] = useState<string | null>(null)
+  const [editDesigName, setEditDesigName] = useState('')
+  const [savingDesig, setSavingDesig] = useState(false)
 
   const load = async () => {
     try {
@@ -71,6 +76,43 @@ export default function DepartmentsPage() {
       setDepartments(prev => prev.filter(d => d.id !== dept.id))
     }
     setActionId(null)
+  }
+
+  const handleAddDesig = async (deptId: string) => {
+    if (!newDesigName.trim()) return
+    setSavingDesig(true)
+    try {
+      await client.post('/designations/', { name: newDesigName.trim(), department: deptId })
+      await load()
+      setNewDesigName('')
+      setShowAddDesig(null)
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Failed to create designation.')
+    }
+    setSavingDesig(false)
+  }
+
+  const handleEditDesig = async (desigId: string) => {
+    if (!editDesigName.trim()) return
+    setSavingDesig(true)
+    try {
+      await client.patch(`/designations/${desigId}/`, { name: editDesigName.trim() })
+      await load()
+      setEditDesigId(null)
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Failed to update designation.')
+    }
+    setSavingDesig(false)
+  }
+
+  const handleDeleteDesig = async (desigId: string, desigName: string) => {
+    if (!confirm(`Delete designation "${desigName}"? This cannot be undone.`)) return
+    try {
+      await client.delete(`/designations/${desigId}/`)
+      await load()
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Cannot delete — employees may be assigned to this designation.')
+    }
   }
 
   if (loading) return (
@@ -189,17 +231,81 @@ export default function DepartmentsPage() {
               {/* Expanded designations */}
               {isExpanded && (
                 <div className="border-t border-slate-100 px-4 pb-4 pt-3">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Designations</p>
-                  {deptDesignations.length === 0 ? (
-                    <p className="text-xs text-slate-400">No designations yet</p>
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Designations</p>
+                    <button
+                      onClick={() => { setShowAddDesig(dept.id); setNewDesigName('') }}
+                      className="flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 font-medium px-2 py-1 rounded-lg hover:bg-emerald-50 transition-colors"
+                    >
+                      <Plus size={12} /> Add
+                    </button>
+                  </div>
+
+                  {/* Add designation inline form */}
+                  {showAddDesig === dept.id && (
+                    <div className="flex items-center gap-2 mb-2 bg-emerald-50 rounded-xl px-3 py-2">
+                      <input
+                        type="text"
+                        value={newDesigName}
+                        onChange={e => setNewDesigName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleAddDesig(dept.id); if (e.key === 'Escape') setShowAddDesig(null) }}
+                        placeholder="Designation name..."
+                        autoFocus
+                        className="flex-1 text-sm bg-transparent outline-none placeholder-slate-400"
+                      />
+                      <button onClick={() => handleAddDesig(dept.id)} disabled={savingDesig || !newDesigName.trim()}
+                        className="text-emerald-600 hover:text-emerald-700 disabled:opacity-40">
+                        <Check size={14} />
+                      </button>
+                      <button onClick={() => setShowAddDesig(null)} className="text-slate-400 hover:text-slate-600">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+
+                  {deptDesignations.length === 0 && showAddDesig !== dept.id ? (
+                    <p className="text-xs text-slate-400">No designations yet — click Add to create one</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                       {deptDesignations.map(desig => (
-                        <div key={desig.id} className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2">
-                          <Users size={13} className="text-slate-400 flex-shrink-0" />
-                          <span className="text-sm text-slate-700">{desig.name}</span>
-                          {desig.grade && (
-                            <span className="text-xs text-slate-400 ml-auto">Grade {desig.grade}</span>
+                        <div key={desig.id} className="flex items-center gap-2 bg-slate-50 rounded-xl px-3 py-2 group">
+                          {editDesigId === desig.id ? (
+                            <>
+                              <input
+                                type="text"
+                                value={editDesigName}
+                                onChange={e => setEditDesigName(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleEditDesig(desig.id); if (e.key === 'Escape') setEditDesigId(null) }}
+                                autoFocus
+                                className="flex-1 text-sm bg-white border border-emerald-300 rounded-lg px-2 py-0.5 outline-none"
+                              />
+                              <button onClick={() => handleEditDesig(desig.id)} disabled={savingDesig}
+                                className="text-emerald-600 hover:text-emerald-700 disabled:opacity-40">
+                                <Check size={13} />
+                              </button>
+                              <button onClick={() => setEditDesigId(null)} className="text-slate-400 hover:text-slate-600">
+                                <X size={13} />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <Users size={13} className="text-slate-400 flex-shrink-0" />
+                              <span className="text-sm text-slate-700 flex-1">{desig.name}</span>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={() => { setEditDesigId(desig.id); setEditDesigName(desig.name) }}
+                                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded"
+                                  title="Rename">
+                                  <Pencil size={11} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDesig(desig.id, desig.name)}
+                                  className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded"
+                                  title="Delete">
+                                  <Trash2 size={11} />
+                                </button>
+                              </div>
+                            </>
                           )}
                         </div>
                       ))}
