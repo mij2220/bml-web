@@ -546,7 +546,7 @@ export default function EmployeeProfilePage() {
                     <label className={labelCls}>Designation</label>
                     <select value={editForm.designation_id} onChange={set("designation_id")} className={inputCls}>
                       <option value="">Select designation</option>
-                      {designations.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      {designations.filter(d => !editForm.department_id || d.department === editForm.department_id).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
                   </div>
                   <div>
@@ -570,9 +570,16 @@ export default function EmployeeProfilePage() {
                     </select>
                   </div>
                   <div>
-                    <label className={labelCls}>Reporting Manager</label>
+                    <label className={labelCls}>L1 Supervisor</label>
                     <select value={editForm.reporting_manager_id} onChange={set("reporting_manager_id")} className={inputCls}>
                       <option value="">No manager</option>
+                      {managers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.employee_id})</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>L2 Shift Incharge</label>
+                    <select value={editForm.shift_incharge_id} onChange={set("shift_incharge_id")} className={inputCls}>
+                      <option value="">No incharge</option>
                       {managers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.employee_id})</option>)}
                     </select>
                   </div>
