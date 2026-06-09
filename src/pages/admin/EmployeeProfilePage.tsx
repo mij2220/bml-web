@@ -186,6 +186,8 @@ export default function EmployeeProfilePage() {
 
   const openEditModal = async () => {
     if (!employee) return;
+    setEditError("");
+    await fetchDropdowns();
     setEditForm({
       full_name: employee.full_name || "",
       email: employee.email || "",
@@ -204,8 +206,6 @@ export default function EmployeeProfilePage() {
       shift_incharge_id: (employee as any).shift_incharge?.id || "",
       role: employee.role || "",
     });
-    setEditError("");
-    await fetchDropdowns();
     setEditModal(true);
   };
 
