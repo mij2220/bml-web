@@ -76,7 +76,7 @@ export default function ApplyLeavePage() {
     if (end < start) return;
     let days = 0;
     const cur = new Date(start);
-    while (cur <= end) { if (cur.getDay() !== 0 && cur.getDay() !== 6) days++; cur.setDate(cur.getDate()+1); }
+    while (cur <= end) { days++; cur.setDate(cur.getDate()+1); }
     setWorkingDays(days);
   };
 
