@@ -377,7 +377,7 @@ export default function EmployeeProfilePage() {
                     { label: "Date of Birth", value: fmt(employee.date_of_birth) },
                     { label: "Phone",         value: fmt(employee.phone) },
                     { label: "CNIC",          value: fmt(employee.cnic) },
-                    { label: "Role",          value: fmtRole(employee.role) },
+                    { label: "Designation",          value: fmtRole(employee.role) },
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <p className="text-xs text-gray-400 mb-0.5">{label}</p>

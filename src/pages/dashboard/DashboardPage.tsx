@@ -70,7 +70,7 @@ export default function DashboardPage() {
       <div className="bg-gradient-to-r from-slate-900 to-slate-700 rounded-2xl p-5 text-white">
         <p className="text-slate-400 text-sm">{greeting()} 👋</p>
         <h2 className="text-xl md:text-2xl font-bold mt-0.5">{user?.full_name}</h2>
-        <p className="text-slate-400 text-sm mt-0.5 capitalize">{user?.role?.replace('_', ' ')} · {(user as any)?.department}</p>
+        <p className="text-slate-400 text-sm mt-0.5 capitalize">{(user as any)?.designation_name || user?.role?.replace('_', ' ')} · {(user as any)?.department}</p>
         {/* Quick actions */}
         <div className="flex gap-2 mt-4 flex-wrap">
           <button onClick={() => navigate('/apply-leave')}
