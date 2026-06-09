@@ -15,11 +15,18 @@ function buildTree(employees: Employee[]): OrgNode[] {
     const mgrId = (e as any).reporting_manager_id
     const mgrName = (e as any).manager_name
     const resolvedId = mgrId || (mgrName ? employees.find(x => x.full_name === mgrName)?.id : null)
+    const sicId = (e as any).shift_incharge_id || (e as any).shift_incharge?.id
+
+    let placed = false
     if (resolvedId && map[resolvedId] && resolvedId !== e.id) {
       map[resolvedId].children.push(map[e.id])
-    } else {
-      roots.push(map[e.id])
+      placed = true
     }
+    if (sicId && map[sicId] && sicId !== e.id && sicId !== resolvedId) {
+      map[sicId].children.push({ emp: e, children: [] })
+      placed = true
+    }
+    if (!placed) roots.push(map[e.id])
   })
   return roots
 }
