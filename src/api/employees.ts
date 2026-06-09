@@ -18,3 +18,6 @@ export const getDesignations = (departmentId?: string) =>
 
 export const getBranches = () =>
   client.get('/branches/')
+
+// Alias for NR11 rename
+export const getUnits = getDepartments
