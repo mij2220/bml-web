@@ -235,6 +235,30 @@ export default function EmployeesPage() {
         </>
       )}
 
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
+          <p className="text-sm text-slate-500">
+            Showing {((page-1)*PAGE_SIZE)+1}–{Math.min(page*PAGE_SIZE, sortedEmployees.length)} of {sortedEmployees.length}
+          </p>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setPage(p => Math.max(1,p-1))} disabled={page===1}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              ← Prev
+            </button>
+            {Array.from({length:totalPages},(_,i)=>i+1).map(p=>(
+              <button key={p} onClick={()=>setPage(p)}
+                className={'w-8 h-8 text-sm rounded-lg border '+(page===p?'bg-emerald-500 text-white border-emerald-500':'border-slate-200 text-slate-600 hover:bg-slate-50')}>
+                {p}
+              </button>
+            ))}
+            <button onClick={() => setPage(p => Math.min(totalPages,p+1))} disabled={page===totalPages}
+              className="px-3 py-1.5 text-sm rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed">
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
       {showAdd && (
         <AddEmployeeModal
           onClose={() => setShowAdd(false)}

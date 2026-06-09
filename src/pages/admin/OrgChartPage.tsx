@@ -96,7 +96,7 @@ export default function OrgChartPage() {
 
   useEffect(() => {
     document.getElementById('page-title')!.textContent = 'Org Chart'
-    getEmployees().then(r => {
+    getEmployees({ page_size: "200" }).then(r => {
       const employees: Employee[] = r.data.data ?? []
       setEmpCount(employees.length)
       setTree(buildTree(employees))
