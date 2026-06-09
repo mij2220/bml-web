@@ -166,7 +166,7 @@ export default function EmployeesPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-slate-900 text-sm truncate">{emp.full_name}</p>
-                  <p className="text-xs text-slate-500 truncate">{emp.department_name} · {emp.employee_id}</p>
+                  <p className="text-xs text-slate-500 truncate">{emp.department_name} · {emp.p_number || emp.employee_id}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${roleColor[emp.role] ?? 'bg-slate-100 text-slate-600'}`}>
@@ -214,7 +214,7 @@ export default function EmployeesPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm font-mono text-slate-600">{emp.employee_id}</td>
+                    <td className="px-4 py-3 text-sm font-mono text-slate-600">{emp.p_number || emp.employee_id}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{emp.department_name}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{emp.designation_name}</td>
                     <td className="px-4 py-3">

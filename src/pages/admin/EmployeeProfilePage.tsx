@@ -6,6 +6,7 @@ import api from "../../api/client";
 interface Employee {
   id: string;
   employee_id: string;
+  p_number?: string;
   full_name: string;
   email: string;
   role?: string;
@@ -316,7 +317,7 @@ export default function EmployeeProfilePage() {
             <span className={`inline-block mt-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${statusBadge(employee.status)}`}>
               {isActive ? "Active" : "Inactive"}
             </span>
-            <p className="text-xs text-gray-400 mt-1 font-mono">{employee.employee_id}</p>
+            <p className="text-xs text-gray-400 mt-1 font-mono">{employee.p_number || employee.employee_id}</p>
             <div className="mt-4 space-y-2">
               <button onClick={openEditModal}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50">

@@ -3,7 +3,8 @@ export interface User {
   email: string
   role: 'employee' | 'manager' | 'hr_admin' | 'super_admin'
   full_name: string
-  employee_id: string | null
+  employee_id: string
+  p_number?: string | null
   department: string | null
   must_change_password: boolean
 }
@@ -11,6 +12,7 @@ export interface User {
 export interface Employee {
   id: string
   employee_id: string
+  p_number?: string
   full_name: string
   email: string
   role: string

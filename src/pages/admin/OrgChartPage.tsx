@@ -61,7 +61,7 @@ function OrgCard({ node, depth = 0, defaultExpanded = false }: { node: OrgNode; 
         <p className={`text-xs truncate mt-0.5 font-medium ${cfg.text}`} title={e.designation_name || ''}>
           {(e.designation_name || e.role?.replace('_', ' ') || '').replace(' (Manager)', '')}
         </p>
-        <p className="text-xs text-slate-400 font-mono mt-0.5">{e.employee_id}</p>
+        <p className="text-xs text-slate-400 font-mono mt-0.5">{e.p_number || e.employee_id}</p>
 
         {/* Child count badge */}
         {hasChildren && (
