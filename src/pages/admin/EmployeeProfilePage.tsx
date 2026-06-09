@@ -201,6 +201,7 @@ export default function EmployeeProfilePage() {
       designation_id: employee.designation?.id || "",
       branch_id: employee.branch?.id || "",
       reporting_manager_id: employee.reporting_manager?.id || "",
+      shift_incharge_id: (employee as any).shift_incharge?.id || "",
       role: employee.role || "",
     });
     setEditError("");
@@ -573,14 +574,14 @@ export default function EmployeeProfilePage() {
                     <label className={labelCls}>L1 Supervisor</label>
                     <select value={editForm.reporting_manager_id} onChange={set("reporting_manager_id")} className={inputCls}>
                       <option value="">No manager</option>
-                      {managers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.employee_id})</option>)}
+                      {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
                     </select>
                   </div>
                   <div>
                     <label className={labelCls}>L2 Shift Incharge</label>
                     <select value={editForm.shift_incharge_id} onChange={set("shift_incharge_id")} className={inputCls}>
                       <option value="">No incharge</option>
-                      {managers.map(m => <option key={m.id} value={m.id}>{m.name} ({m.employee_id})</option>)}
+                      {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
                     </select>
                   </div>
                   <div>
