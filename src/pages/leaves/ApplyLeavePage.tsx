@@ -196,7 +196,7 @@ export default function ApplyLeavePage() {
               const bal = balances.find(b => b.leave_type === lt.id);
               const label = bal
                 ? `${lt.name} (${bal.remaining_days}/${bal.allocated_days} days remaining)`
-                : `${lt.name} (${lt.is_paid ? "Paid" : "Unpaid"})`;
+                : `${lt.name} (${lt.is_paid ? "Paid" : "Unlimited"})`;
               return <option key={lt.id} value={lt.id}>{label}</option>;
             })}
           </select>
