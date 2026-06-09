@@ -43,7 +43,6 @@ export default function EmployeesPage() {
 
   const filtered = deptFilter
     ? employees.filter((e: any) => e.department_name === deptFilter)
-    : employees
   const sortedEmployees = [...filtered].sort((a: any, b: any) => {
     if (!sortKey || !sortDir) return 0
     const av = a[sortKey], bv = b[sortKey]
@@ -86,7 +85,6 @@ export default function EmployeesPage() {
     return () => clearTimeout(t)
   }, [search])
 
-      : employees
   const active = employees.filter(e => e.status === 'active').length
   const totalPages = Math.ceil(sortedEmployees.length / PAGE_SIZE)
   const pagedEmployees = sortedEmployees.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
