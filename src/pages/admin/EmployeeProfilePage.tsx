@@ -118,9 +118,9 @@ export default function EmployeeProfilePage() {
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [departments, setUnits] = useState<DropdownOption[]>([]);
-  const [designations, setDesignations] = useState<DropdownOption[]>([]);
+  const [designations, setDesignations] = useState<(DropdownOption & { department?: string })[]>([]);
   const [branches, setBranches] = useState<DropdownOption[]>([]);
-  const [managers, setManagers] = useState<(DropdownOption & { employee_id: string })[]>([]);
+  const [managers, setManagers] = useState<(DropdownOption & { employee_id: string; full_name: string })[]>([]);
 
   // Balance adjust modal
   const [adjustModal, setAdjustModal] = useState<LeaveBalance | null>(null);
