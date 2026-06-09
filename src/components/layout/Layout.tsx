@@ -142,14 +142,14 @@ export default function Layout() {
               {navItem('/departments',       Building2,   'Departments')}
               {navItem('/leave-types',       Settings,    'Leave Types')}
               {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')}
-              {navItem('/shifts',            Timer,       'Shifts')}
-              {navItem('/branches',          Building,    'Branches')}
+              {/* HIDDEN: {navItem('/shifts',            Timer,       'Shifts')} */}
+              {/* HIDDEN: {navItem('/branches',          Building,    'Branches')} */}
               {navItem('/quota-management',   Building,    'Quota Management')}
-              {navItem('/projects',          FolderOpen,  'Projects')}
+              {/* HIDDEN: {navItem('/projects',          FolderOpen,  'Projects')} */}
               {navItem('/announcements',     Megaphone,   'Announcements')}
               {navItem('/reports',           BarChart3,   'Reports')}
               {navItem('/audit-log',         ScrollText,  'Audit Log')}
-              {navItem('/billing',           CreditCard,  'Billing')}
+              {/* HIDDEN: {navItem('/billing',           CreditCard,  'Billing')} */}
             </>
           )}
         </nav>
