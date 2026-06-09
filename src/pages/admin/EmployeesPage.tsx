@@ -27,6 +27,8 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [total, setTotal] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
+  const [deptFilter, setDeptFilter] = useState('')
+  const [departments, setDepartments] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<'asc' | 'desc' | null>('asc')
   const [page, setPage] = useState(1)
@@ -39,7 +41,7 @@ export default function EmployeesPage() {
     } else { setSortKey(col); setSortDir('asc') }
   }
 
-  const sortedEmployees = [...employees].sort((a: any, b: any) => {
+  const sortedEmployees = [...filtered].sort((a: any, b: any) => {
     if (!sortKey || !sortDir) return 0
     const av = a[sortKey], bv = b[sortKey]
     if (av == null) return 1; if (bv == null) return -1
@@ -60,8 +62,12 @@ export default function EmployeesPage() {
       const params: Record<string, string> = { page_size: '200' }
       if (q) params.search = q
       const { data } = await getEmployees(params)
-      setEmployees(data.data ?? [])
-      setTotal(data.pagination?.count ?? (data.data ?? []).length)
+      const emps = data.data ?? []
+      setEmployees(emps)
+      setTotal(data.pagination?.count ?? emps.length)
+      // Build unique dept list
+      const depts = [...new Set(emps.map((e: any) => e.department_name).filter(Boolean))] as string[]
+      setDepartments(depts.sort())
     } catch {}
     setLoading(false)
   }
@@ -77,6 +83,9 @@ export default function EmployeesPage() {
     return () => clearTimeout(t)
   }, [search])
 
+  const filtered = deptFilter
+    ? employees.filter((e: any) => e.department_name === deptFilter)
+    : employees
   const active = employees.filter(e => e.status === 'active').length
   const totalPages = Math.ceil(sortedEmployees.length / PAGE_SIZE)
   const pagedEmployees = sortedEmployees.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -117,6 +126,14 @@ export default function EmployeesPage() {
 
       {/* Search + Add */}
       <div className="flex items-center gap-3">
+        {/* Unit filter */}
+        {departments.length > 0 && (
+          <select value={deptFilter} onChange={e => setDeptFilter(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white">
+            <option value="">All Units</option>
+            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+        )}
         <div className="relative flex-1">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
