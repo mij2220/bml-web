@@ -26,6 +26,7 @@ interface Employee {
   designation?: { id: string; name: string } | null;
   branch?: { id: string; name: string } | null;
   reporting_manager?: { id: string; full_name: string; employee_id: string } | null;
+  shift_incharge?: { id: string; full_name: string; employee_id: string } | null;
 }
 
 interface LeaveBalance {
@@ -335,7 +336,8 @@ export default function EmployeeProfilePage() {
             <div className="mt-5 pt-4 border-t border-gray-50 text-left space-y-2.5">
               {[
                 { label: "Department", value: employee.department?.name },
-                { label: "Manager",    value: employee.reporting_manager?.full_name || "None" },
+                { label: "Supervisor (L1)", value: employee.reporting_manager?.full_name || "None" },
+                { label: "Incharge (L2)",  value: (employee as any).shift_incharge?.full_name || "None" },
                 { label: "Type",       value: employee.employment_type },
                 { label: "Joined",     value: employee.joining_date },
               ].map(({ label, value }) => (
@@ -391,7 +393,8 @@ export default function EmployeeProfilePage() {
                     { label: "Employment Type", value: employee.employment_type?.replace(/_/g, " ") || "—" },
                     { label: "Salary Grade",    value: fmt(employee.salary_grade) },
                     { label: "Branch",          value: fmt(employee.branch?.name) },
-                    { label: "Reports To",      value: fmt(employee.reporting_manager?.full_name) },
+                    { label: "L1 Supervisor",     value: fmt(employee.reporting_manager?.full_name) },
+                    { label: "L2 Shift Incharge", value: fmt((employee as any).shift_incharge?.full_name) },
                     { label: "Joining Date",    value: fmt(employee.joining_date) },
                     { label: "Exp. Start Date", value: fmt(employee.experience_start_date) },
                     { label: "Status",          value: cap(employee.status) },
