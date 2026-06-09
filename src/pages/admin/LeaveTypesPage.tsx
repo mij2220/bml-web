@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import client from '../../api/client'
-import { Plus, Settings, CheckCircle, XCircle, Edit2 } from 'lucide-react'
+import { Plus, XCircle, Edit2, Eye, EyeOff, CheckCircle } from 'lucide-react'
 
 interface LeaveType {
   id: string
@@ -54,7 +54,7 @@ function LeaveTypeModal({ leaveType, onClose, onSave }: {
       onSave()
       onClose()
     } catch (e: any) {
-      setError(e.response?.data?.message ?? 'Save failed.')
+      setError(e.response?.data?.message ?? 'Validation failed.')
     }
     setSaving(false)
   }
@@ -148,13 +148,21 @@ export default function LeaveTypesPage() {
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<LeaveType | null>(null)
+  const [showInactive, setShowInactive] = useState(false)
 
   const load = async () => {
     setLoading(true)
     try {
-      const { data } = await client.get('/leave-types/')
+      // Fetch all leave types including inactive
+      const { data } = await client.get('/leave-types/?show_inactive=true')
       setTypes(data.data ?? [])
-    } catch {}
+    } catch {
+      // Fallback: fetch active only
+      try {
+        const { data } = await client.get('/leave-types/')
+        setTypes(data.data ?? [])
+      } catch {}
+    }
     setLoading(false)
   }
 
@@ -163,15 +171,36 @@ export default function LeaveTypesPage() {
     load()
   }, [])
 
-  const handleDeactivate = async (id: string) => {
-    if (!confirm('Deactivate this leave type?')) return
-    await client.delete(`/leave-types/${id}/`)
-    load()
+  const handleToggleActive = async (lt: LeaveType) => {
+    const action = lt.is_active ? 'Deactivate' : 'Activate'
+    if (!confirm(`${action} "${lt.name}"?`)) return
+    try {
+      await client.patch(`/leave-types/${lt.id}/`, { is_active: !lt.is_active })
+      load()
+    } catch (e: any) {
+      alert(e.response?.data?.message ?? 'Failed to update.')
+    }
   }
+
+  const activeTypes   = types.filter(lt => lt.is_active)
+  const inactiveTypes = types.filter(lt => !lt.is_active)
+  const displayed     = showInactive ? types : activeTypes
 
   return (
     <div className="max-w-5xl space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        {/* Inactive toggle */}
+        <button
+          onClick={() => setShowInactive(v => !v)}
+          className={`flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg border transition-colors
+            ${showInactive
+              ? 'bg-slate-100 border-slate-300 text-slate-700'
+              : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'}`}
+        >
+          {showInactive ? <EyeOff size={15} /> : <Eye size={15} />}
+          {showInactive ? 'Hide inactive' : `Show inactive (${inactiveTypes.length})`}
+        </button>
+
         <button
           onClick={() => { setEditing(null); setModalOpen(true) }}
           className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors"
@@ -185,10 +214,18 @@ export default function LeaveTypesPage() {
           <div className="col-span-3 flex justify-center py-12">
             <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : types.map(lt => (
-          <div key={lt.id} className="bg-white rounded-xl border border-slate-200 p-5 relative overflow-hidden">
+        ) : displayed.map(lt => (
+          <div key={lt.id} className={`bg-white rounded-xl border p-5 relative overflow-hidden transition-opacity
+            ${lt.is_active ? 'border-slate-200' : 'border-slate-200 opacity-60'}`}>
             {/* Color bar */}
             <div className="absolute top-0 left-0 right-0 h-1" style={{ background: lt.color }} />
+
+            {/* Inactive badge */}
+            {!lt.is_active && (
+              <div className="absolute top-2 right-2 text-xs bg-slate-200 text-slate-500 px-2 py-0.5 rounded-full font-medium">
+                Inactive
+              </div>
+            )}
 
             <div className="flex items-start justify-between mb-3 pt-1">
               <div className="flex items-center gap-2">
@@ -220,17 +257,24 @@ export default function LeaveTypesPage() {
             </div>
 
             <div className="flex gap-2">
+              {lt.is_active && (
+                <button
+                  onClick={() => { setEditing(lt); setModalOpen(true) }}
+                  className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-600 hover:text-slate-900 font-medium py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  <Edit2 size={12} /> Edit
+                </button>
+              )}
               <button
-                onClick={() => { setEditing(lt); setModalOpen(true) }}
-                className="flex-1 flex items-center justify-center gap-1 text-xs text-slate-600 hover:text-slate-900 font-medium py-1.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+                onClick={() => handleToggleActive(lt)}
+                className={`flex-1 flex items-center justify-center gap-1 text-xs font-medium py-1.5 border rounded-lg transition-colors
+                  ${lt.is_active
+                    ? 'text-red-500 hover:text-red-700 border-red-100 hover:bg-red-50'
+                    : 'text-emerald-600 hover:text-emerald-800 border-emerald-100 hover:bg-emerald-50'}`}
               >
-                <Edit2 size={12} /> Edit
-              </button>
-              <button
-                onClick={() => handleDeactivate(lt.id)}
-                className="flex-1 flex items-center justify-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium py-1.5 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
-              >
-                <XCircle size={12} /> Deactivate
+                {lt.is_active
+                  ? <><XCircle size={12} /> Deactivate</>
+                  : <><CheckCircle size={12} /> Activate</>}
               </button>
             </div>
           </div>
