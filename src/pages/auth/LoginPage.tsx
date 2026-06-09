@@ -5,11 +5,12 @@ import { useAuthStore } from '../../store/authStore'
 import { Eye, EyeOff, BookOpen } from 'lucide-react'
 
 const DEMO_USERS = [
-  { label: 'HR Admin',  email: 'admin@bookmyleave.com',        password: 'Admin@1234',    role: 'HR Admin',  color: 'bg-emerald-500' },
-  { label: 'Manager',   email: 'sarah.khan@bookmyleave.com',   password: 'Manager@1234',  role: 'Manager',   color: 'bg-purple-500' },
-  { label: 'Employee',  email: 'ali.raza@bookmyleave.com',     password: 'Employee@1234', role: 'Employee',  color: 'bg-blue-500' },
-  { label: 'Employee',  email: 'fatima.malik@bookmyleave.com', password: 'Employee@1234', role: 'Employee',  color: 'bg-pink-500' },
-  { label: 'Employee',  email: 'usman.ahmed@bookmyleave.com',  password: 'Employee@1234', role: 'Employee',  color: 'bg-amber-500' },
+  { label: 'HR Admin',   email: 'admin@bookmyleave.com',             password: 'Admin@1234',    role: 'HR Admin',          color: 'bg-emerald-500' },
+  { label: 'S.Incharge', email: 'zafar.iqbal@bookmyleave.com',       password: 'Manager@1234',  role: 'Shift Incharge',    color: 'bg-purple-500' },
+  { label: 'Supervisor', email: 'naseem.baig@bookmyleave.com',        password: 'Manager@1234',  role: 'Shift Supervisor',  color: 'bg-indigo-500' },
+  { label: 'Operator',   email: 'arif.saleem@bookmyleave.com',        password: 'Employee@1234', role: 'Operator',          color: 'bg-blue-500' },
+  { label: 'Operator',   email: 'abdul.salam.adil@bookmyleave.com',   password: 'Employee@1234', role: 'Operator',          color: 'bg-pink-500' },
+  { label: 'Operator',   email: 'amir.ali@bookmyleave.com',           password: 'Employee@1234', role: 'Operator',          color: 'bg-amber-500' },
 ]
 
 export default function LoginPage() {
