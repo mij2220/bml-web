@@ -623,17 +623,10 @@ export default function ApprovalsPage() {
                       <span className="font-semibold text-slate-900">{app.total_days}d</span>
                     </div>
                     <div className="flex items-center gap-2 mt-3 flex-wrap">
-                      {isPast ? (
-                        <span title="Leave dates have passed — ask employee to cancel or reject this"
-                          className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 text-slate-300 text-xs font-semibold rounded-lg border border-slate-200 cursor-not-allowed select-none">
-                          <CheckCircle size={13} /> Approve
-                        </span>
-                      ) : (
                         <button onClick={() => { setActionId(app.id); setActionType('approve'); setComment('') }}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200">
                           <CheckCircle size={13} /> Approve
                         </button>
-                      )}
                       <button onClick={() => { setActionId(app.id); setActionType('reject'); setComment('') }}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg border border-red-200">
                         <XCircle size={13} /> Reject
