@@ -152,52 +152,47 @@ export default function OrgChartPage() {
               {group.name}
             </div>
 
-            {/* L2 Incharge */}
-            {group.incharge && (
-              <>
-                <EmpCard
-                  emp={group.incharge}
-                  collapsed={collapsed[`${group.name}-incharge`]}
-                  onToggle={() => toggle(`${group.name}-incharge`)}
-                  childCount={group.operators.length}
-                />
-                {!collapsed[`${group.name}-incharge`] && group.operators.length > 0 && (
-                  <>
-                    <ConnectorLine />
-                    <HorizontalGroup>
-                      {group.operators.map(op => (
-                        <EmpCard key={op.id + '-ic'} emp={op} />
-                      ))}
-                    </HorizontalGroup>
-                  </>
-                )}
-              </>
-            )}
-
-            {/* Spacer between L2 and L1 if both exist */}
-            {group.incharge && group.supervisor && <div className="h-4" />}
-
-            {/* L1 Supervisor */}
-            {group.supervisor && (
-              <>
-                <EmpCard
-                  emp={group.supervisor}
-                  collapsed={collapsed[`${group.name}-supervisor`]}
-                  onToggle={() => toggle(`${group.name}-supervisor`)}
-                  childCount={group.operators.length}
-                />
-                {!collapsed[`${group.name}-supervisor`] && group.operators.length > 0 && (
-                  <>
-                    <ConnectorLine />
-                    <HorizontalGroup>
-                      {group.operators.map(op => (
-                        <EmpCard key={op.id + '-sv'} emp={op} />
-                      ))}
-                    </HorizontalGroup>
-                  </>
-                )}
-              </>
-            )}
+            {/* L2 + L1 side by side */}
+            <div className="flex gap-6 items-start justify-center">
+              {group.incharge && (
+                <div className="flex flex-col items-center">
+                  <p className="text-xs text-slate-400 mb-2 font-medium">L2 · Incharge</p>
+                  <EmpCard
+                    emp={group.incharge}
+                    collapsed={collapsed[`${group.name}-incharge`]}
+                    onToggle={() => toggle(`${group.name}-incharge`)}
+                    childCount={group.operators.length}
+                  />
+                  {!collapsed[`${group.name}-incharge`] && group.operators.length > 0 && (
+                    <div className="mt-6 flex flex-col items-center">
+                      <div className="w-px h-4 bg-slate-300" />
+                      <div className="flex gap-3 flex-wrap justify-center mt-1">
+                        {group.operators.map(op => <EmpCard key={op.id + 'i'} emp={op} />)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {group.supervisor && (
+                <div className="flex flex-col items-center">
+                  <p className="text-xs text-slate-400 mb-2 font-medium">L1 · Supervisor</p>
+                  <EmpCard
+                    emp={group.supervisor}
+                    collapsed={collapsed[`${group.name}-supervisor`]}
+                    onToggle={() => toggle(`${group.name}-supervisor`)}
+                    childCount={group.operators.length}
+                  />
+                  {!collapsed[`${group.name}-supervisor`] && group.operators.length > 0 && (
+                    <div className="mt-6 flex flex-col items-center">
+                      <div className="w-px h-4 bg-slate-300" />
+                      <div className="flex gap-3 flex-wrap justify-center mt-1">
+                        {group.operators.map(op => <EmpCard key={op.id + 's'} emp={op} />)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* Operators only (no manager in dept) */}
             {!group.incharge && !group.supervisor && group.operators.length > 0 && (
