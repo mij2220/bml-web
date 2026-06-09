@@ -204,6 +204,7 @@ export default function EmployeeProfilePage() {
       branch_id: employee.branch?.id || "",
       reporting_manager_id: employee.reporting_manager?.id || "",
       shift_incharge_id: (employee as any).shift_incharge?.id || "",
+      experience_start_date: employee.experience_start_date || "",
       role: employee.role || "",
     });
     setEditModal(true);

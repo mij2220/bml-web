@@ -104,6 +104,8 @@ export default function ApplyLeavePage() {
     if (reason.trim().length < 5) e.reason = "Reason must be at least 5 characters";
     if (selectedBalance && workingDays && workingDays > selectedBalance.remaining_days)
       e.balance = `Only ${selectedBalance.remaining_days} days remaining`;
+    if (!contact.trim()) e.contact = "Contact number is required";
+    if (!address.trim()) e.address = "Address during leave is required";
     if (selectedType?.code === "CD" && !dutyDate) e.duty_date = "Required for CD leave";
     if (selectedType?.code === "SL" && !sickSubtype) e.sick_subtype = "Please select sick leave sub-type";
     if (selectedType?.code === "SL" && sickSubtype === "with_mc" && !attachment) e.attachment = "Medical certificate required";
@@ -350,14 +352,16 @@ export default function ApplyLeavePage() {
           <h3 className="text-sm font-medium text-gray-700 mb-3">Contact during leave</h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Phone number</label>
-              <input type="tel" value={contact} onChange={e => setContact(e.target.value)} placeholder="0300-1234567"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className="block text-xs text-gray-500 mb-1">Phone number <span className="text-red-500">*</span></label>
+              <input type="tel" value={contact} onChange={e => { setContact(e.target.value); setErrors(er => ({...er, contact:""})); }} placeholder="0300-1234567"
+                className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.contact ? "border-red-300" : "border-gray-200"}`} />
+              {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
             </div>
             <div>
-              <label className="block text-xs text-gray-500 mb-1">Address during leave</label>
-              <input type="text" value={address} onChange={e => setAddress(e.target.value)} placeholder="Home city or address"
-                className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <label className="block text-xs text-gray-500 mb-1">Address during leave <span className="text-red-500">*</span></label>
+              <input type="text" value={address} onChange={e => { setAddress(e.target.value); setErrors(er => ({...er, address:""})); }} placeholder="Home city or address"
+                className={`w-full border rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${errors.address ? "border-red-300" : "border-gray-200"}`} />
+              {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address}</p>}
             </div>
           </div>
         </div>
