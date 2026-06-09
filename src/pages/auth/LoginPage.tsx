@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import { Eye, EyeOff, BookOpen } from 'lucide-react'
 
 const DEMO_USERS = [
-  { label: 'HR Admin',   email: 'admin@bookmyleave.com',             password: 'Admin@1234',    role: 'HR Admin',          color: 'bg-emerald-500' },
+  { label: 'Admin',   email: 'admin@bookmyleave.com',             password: 'Admin@1234',    role: 'Admin',          color: 'bg-emerald-500' },
   { label: 'S.Incharge', email: 'zafar.iqbal@bookmyleave.com',       password: 'Manager@1234',  role: 'Shift Incharge',    color: 'bg-purple-500' },
   { label: 'Supervisor', email: 'naseem.baig@bookmyleave.com',        password: 'Manager@1234',  role: 'Shift Supervisor',  color: 'bg-indigo-500' },
   { label: 'Operator',   email: 'arif.saleem@bookmyleave.com',        password: 'Employee@1234', role: 'Operator',          color: 'bg-blue-500' },
@@ -84,11 +84,11 @@ export default function LoginPage() {
                   {u.email.split('@')[0].split('.')[0].charAt(0).toUpperCase() + u.email.split('@')[0].split('.')[0].slice(1)}
                 </span>
                 <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
-                  u.label === 'HR Admin' ? 'bg-emerald-500/30 text-emerald-300' :
+                  u.label === 'Admin' ? 'bg-emerald-500/30 text-emerald-300' :
                   u.label === 'Manager'  ? 'bg-purple-500/30 text-purple-300' :
                                            'bg-blue-500/30 text-blue-300'
                 }`}>
-                  {u.label === 'HR Admin' ? 'Admin' : u.label}
+                  {u.label === 'Admin' ? 'Admin' : u.label}
                 </span>
               </button>
             ))}

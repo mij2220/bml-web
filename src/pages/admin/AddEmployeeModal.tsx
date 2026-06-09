@@ -86,7 +86,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
             {inp('Salary Grade','salary_grade',{placeholder:'Grade 5'})}
             {sel('Gender *','gender',[{v:'male',l:'Male'},{v:'female',l:'Female'},{v:'other',l:'Other'}])}
             {sel('Employment Type *','employment_type',[{v:'permanent',l:'Permanent'},{v:'contractual',l:'Contractual'},{v:'probation',l:'Probation'},{v:'part_time',l:'Part Time'}])}
-            {sel('Role *','role',[{v:'employee',l:'Employee'},{v:'manager',l:'Manager'},{v:'hr_admin',l:'HR Admin'}])}
+            {sel('Role *','role',[{v:'employee',l:'Employee'},{v:'manager',l:'Manager'},{v:'hr_admin',l:'Admin'}])}
             {sel('Department *','department_id',depts.map(d=>({v:d.id,l:d.name})))}
             {sel('Designation *','designation_id',filteredDesigs.map(d=>({v:d.id,l:d.name})))}
             {sel('Reporting Manager','reporting_manager_id',managers.map(m=>({v:m.id,l:m.full_name})))}

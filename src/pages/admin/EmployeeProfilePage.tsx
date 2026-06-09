@@ -565,7 +565,7 @@ export default function EmployeeProfilePage() {
                       <option value="">Select role</option>
                       <option value="employee">Employee</option>
                       <option value="manager">Manager</option>
-                      <option value="hr_admin">HR Admin</option>
+                      <option value="hr_admin">Admin</option>
                       <option value="super_admin">Super Admin</option>
                     </select>
                   </div>

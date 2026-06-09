@@ -122,7 +122,7 @@ export default function OrgChartPage() {
       <div className="bg-white rounded-xl border border-slate-200 px-5 py-3 flex items-center gap-6 flex-wrap">
         <span className="text-sm font-semibold text-slate-700">{empCount} Employees</span>
         {[
-          { label: 'HR Admin',          color: 'bg-emerald-500' },
+          { label: 'Admin',          color: 'bg-emerald-500' },
           { label: 'Manager',           color: 'bg-purple-500'  },
           { label: 'Operator',          color: 'bg-blue-400'    },
         ].map(({ label, color }) => (

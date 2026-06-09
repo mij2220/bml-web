@@ -136,7 +136,7 @@ export default function Layout() {
           {/* HR ADMIN */}
           {isHR && (
             <>
-              {sectionLabel('HR Admin')}
+              {sectionLabel('Admin')}
               {navItem('/employees',         Users,       'Employees')}
               {navItem('/org-chart',         Trees,       'Org Chart')}
               {navItem('/departments',       Building2,   'Departments')}
