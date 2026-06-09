@@ -57,7 +57,7 @@ export default function EmployeesPage() {
   const load = async (q?: string) => {
     setLoading(true)
     try {
-      const params: Record<string, string> = {}
+      const params: Record<string, string> = { page_size: '200' }
       if (q) params.search = q
       const { data } = await getEmployees(params)
       setEmployees(data.data ?? [])
