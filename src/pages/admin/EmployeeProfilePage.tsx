@@ -178,7 +178,7 @@ export default function EmployeeProfilePage() {
         api.get("/employees/?page_size=200"),
       ]);
       setUnits(unwrapList(deptRes) as DropdownOption[]);
-      setDesignations(unwrapList(desigRes) as DropdownOption[]);
+      setDesignations(unwrapList(desigRes) as (DropdownOption & { department?: string })[]);
       setBranches(unwrapList(branchRes) as DropdownOption[]);
       const allEmps = unwrapList(empRes) as (DropdownOption & { employee_id: string })[];
       setManagers(allEmps.filter(e => e.id !== id));
