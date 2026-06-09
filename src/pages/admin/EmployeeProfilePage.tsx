@@ -174,7 +174,7 @@ export default function EmployeeProfilePage() {
         api.get("/departments/"),
         api.get("/designations/"),
         api.get("/branches/"),
-        api.get("/employees/"),
+        api.get("/employees/?page_size=200"),
       ]);
       setDepartments(unwrapList(deptRes) as DropdownOption[]);
       setDesignations(unwrapList(desigRes) as DropdownOption[]);
