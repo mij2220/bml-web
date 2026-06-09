@@ -162,7 +162,7 @@ export default function Layout() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 truncate">{user?.full_name}</p>
-              <p className="text-xs text-slate-500 capitalize">{user?.role?.replace('_', ' ')}</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.role === 'hr_admin' ? 'Admin' : user?.role?.replace('_', ' ')}</p>
             </div>
             <div className="flex gap-1">
               <button
@@ -212,7 +212,7 @@ export default function Layout() {
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-slate-900 leading-none">{user?.full_name}</p>
-                <p className="text-xs text-slate-500 mt-0.5 capitalize">{user?.role?.replace('_', ' ')}</p>
+                <p className="text-xs text-slate-500 mt-0.5 capitalize">{user?.role === 'hr_admin' ? 'Admin' : user?.role?.replace('_', ' ')}</p>
               </div>
               <button onClick={() => navigate('/settings')} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Settings">
                 <Settings size={17} />
