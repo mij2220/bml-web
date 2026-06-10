@@ -252,18 +252,17 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3 text-sm font-mono text-slate-600">{emp.p_number || emp.employee_id}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{emp.department_name}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{emp.designation_name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{(emp as any).created_at ? new Date((emp as any).created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${roleColor[emp.role] ?? 'bg-slate-100 text-slate-600'}`}>
                         {emp.role?.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-slate-500">{(emp as any).created_at ? new Date((emp as any).created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColor[emp.status] ?? 'bg-slate-100 text-slate-500'}`}>
                         {emp.status?.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{(emp as any).created_at ? new Date((emp as any).created_at).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
                   </tr>
                 ))}
               </tbody>
