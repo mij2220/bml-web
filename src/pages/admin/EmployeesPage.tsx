@@ -53,9 +53,27 @@ export default function EmployeesPage() {
   })
 
   const handleDownload = () => {
+    const defaultPassword = (e: any) => {
+      if (e.role === 'hr_admin') return 'Admin@1234'
+      if (e.role === 'manager') return 'Manager@1234'
+      return 'Employee@1234'
+    }
     downloadCSV('employees.csv',
-      ['Name', 'Email', 'Employee ID', 'Unit', 'Designation', 'Role', 'Status'],
-      sortedEmployees.map((e: any) => [e.full_name, e.email, e.employee_id, e.department_name, e.designation_name, e.role, e.status])
+      ['Full Name', 'P.No', 'Employee ID', 'Email', 'Login Password', 'Unit', 'Designation', 'Role', 'Status', 'Employment Type', 'Manager (L1)', 'Incharge (L2)'],
+      sortedEmployees.map((e: any) => [
+        e.full_name,
+        e.p_number || e.employee_id,
+        e.employee_id,
+        e.email,
+        defaultPassword(e),
+        e.department_name || '',
+        e.designation_name || '',
+        e.role || '',
+        e.status || '',
+        e.employment_type || '',
+        e.manager_name || '',
+        e.shift_incharge_name || '',
+      ])
     )
   }
 
