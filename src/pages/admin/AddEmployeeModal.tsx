@@ -18,7 +18,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
   })
 
   useEffect(() => {
-    Promise.all([getUnits(), getDesignations(), getEmployees()]).then(([d,des,m]) => {
+    Promise.all([getUnits(), getDesignations(), getEmployees({page_size:'200'})]).then(([d,des,m]) => {
       setDepts(d.data.data??[])
       setAllDesigs(des.data.data??[])
       setManagers((m.data.data??[]).filter((e:any) => ['manager','hr_admin','super_admin'].includes(e.role)))
@@ -27,6 +27,9 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
 
   const set = (k:string, v:string) => setForm(f=>({...f,[k]:v}))
   const filteredDesigs = form.department_id ? allDesigs.filter(d=>d.department===form.department_id) : allDesigs
+  const filteredManagers = form.department_id
+    ? managers.filter(m=>m.department_id===form.department_id || ['hr_admin','super_admin'].includes(m.role))
+    : managers
 
   const handleSubmit = async () => {
     setError('')
@@ -89,7 +92,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
             {sel('Role *','role',[{v:'employee',l:'Employee'},{v:'manager',l:'Manager'},{v:'hr_admin',l:'Admin'}])}
             {sel('Department *','department_id',depts.map(d=>({v:d.id,l:d.name})))}
             {sel('Designation *','designation_id',filteredDesigs.map(d=>({v:d.id,l:d.name})))}
-            {sel('Reporting Manager','reporting_manager_id',managers.map(m=>({v:m.id,l:m.full_name})))}
+            {sel('Reporting Manager','reporting_manager_id',filteredManagers.map(m=>({v:m.id,l:m.full_name})))}
           </div>
         </div>
         <div className="flex-shrink-0 p-5 border-t border-slate-100 flex gap-3">
