@@ -181,7 +181,7 @@ export default function EmployeeProfilePage() {
       setDesignations(unwrapList(desigRes) as (DropdownOption & { department?: string })[]);
       setBranches(unwrapList(branchRes) as DropdownOption[]);
       const allEmps = unwrapList(empRes) as (DropdownOption & { employee_id: string })[];
-      setManagers(allEmps.filter(e => e.id !== id));
+      setManagers(allEmps.filter(e => e.id !== id && ['manager','hr_admin','super_admin'].includes((e as any).role)));
     } catch { /* silently fail */ }
   };
 
