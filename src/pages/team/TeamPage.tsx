@@ -21,7 +21,7 @@ export default function TeamPage() {
 
   useEffect(() => {
     document.getElementById('page-title')!.textContent = 'My Team'
-    getEmployees().then(({ data }) => setTeam(data.data ?? [])).catch(() => {}).finally(() => setLoading(false))
+    getEmployees({ page_size: "200" }).then(({ data }) => setTeam(data.data ?? [])).catch(() => {}).finally(() => setLoading(false))
   }, [])
 
   const toggleSort = (key: SortKey) => {
@@ -96,7 +96,7 @@ export default function TeamPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
-                  {([['full_name','Name'],['employee_id','EMP ID'],['designation_name','Designation'],['department_name','Unit'],['status','Status']] as [SortKey,string][]).map(([k,label]) => (
+                  {([['full_name','Name'],['employee_id','P.No'],['designation_name','Designation'],['department_name','Unit'],['status','Status']] as [SortKey,string][]).map(([k,label]) => (
                     <th key={k} className="px-4 py-3 text-left font-medium cursor-pointer select-none hover:text-slate-700" onClick={() => toggleSort(k)}>
                       {label}<SortIcon k={k} />
                     </th>
@@ -117,7 +117,7 @@ export default function TeamPage() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{emp.employee_id}</td>
+                    <td className="px-4 py-3 font-mono text-xs text-slate-500">{(emp as any).p_number || emp.employee_id}</td>
                     <td className="px-4 py-3 text-slate-600">{emp.designation_name ?? '—'}</td>
                     <td className="px-4 py-3 text-slate-600">{emp.department_name ?? '—'}</td>
                     <td className="px-4 py-3">
