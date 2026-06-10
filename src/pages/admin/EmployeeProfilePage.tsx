@@ -121,6 +121,7 @@ export default function EmployeeProfilePage() {
   const [designations, setDesignations] = useState<(DropdownOption & { department?: string })[]>([]);
   const [branches, setBranches] = useState<DropdownOption[]>([]);
   const [managers, setManagers] = useState<(DropdownOption & { employee_id: string; full_name: string })[]>([]);
+  const [allManagers, setAllManagers] = useState<(DropdownOption & { employee_id: string; full_name: string })[]>([]);
 
   // Balance adjust modal
   const [adjustModal, setAdjustModal] = useState<LeaveBalance | null>(null);
@@ -181,7 +182,7 @@ export default function EmployeeProfilePage() {
       setDesignations(unwrapList(desigRes) as (DropdownOption & { department?: string })[]);
       setBranches(unwrapList(branchRes) as DropdownOption[]);
       const allEmps = unwrapList(empRes) as (DropdownOption & { employee_id: string })[];
-      setManagers(allEmps.filter(e => e.id !== id && ['manager','hr_admin','super_admin'].includes((e as any).role)));
+      setAllManagers(allEmps.filter(e => e.id !== id && ['manager','hr_admin','super_admin'].includes((e as any).role)));
     } catch { /* silently fail */ }
   };
 
@@ -294,6 +295,10 @@ export default function EmployeeProfilePage() {
     { key: "history",    label: "Leave History" },
     { key: "attendance", label: "Attendance" },
   ] as const;
+
+  const filteredManagers = editForm.department_id
+    ? allManagers.filter(m => (m as any).department_id === editForm.department_id || ['hr_admin','super_admin'].includes((m as any).role))
+    : allManagers;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -576,14 +581,14 @@ export default function EmployeeProfilePage() {
                     <label className={labelCls}>L1 Supervisor</label>
                     <select value={editForm.reporting_manager_id} onChange={set("reporting_manager_id")} className={inputCls}>
                       <option value="">No manager</option>
-                      {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
+                      {filteredManagers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
                     </select>
                   </div>
                   <div>
                     <label className={labelCls}>L2 Shift Incharge</label>
                     <select value={editForm.shift_incharge_id} onChange={set("shift_incharge_id")} className={inputCls}>
                       <option value="">No incharge</option>
-                      {managers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
+                      {filteredManagers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
                     </select>
                   </div>
                   <div>
