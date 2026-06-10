@@ -298,8 +298,9 @@ export default function EmployeeProfilePage() {
     { key: "attendance", label: "Attendance" },
   ] as const;
 
+  const selectedDeptName = units.find(u => u.id === editForm.department_id)?.name || '';
   const filteredManagers = editForm.department_id
-    ? allManagers.filter(m => (m as any).department_name === editForm.department_name || ['hr_admin','super_admin'].includes((m as any).role))
+    ? allManagers.filter(m => (m as any).department_name === selectedDeptName || ['hr_admin','super_admin'].includes((m as any).role))
     : allManagers;
 
   return (
