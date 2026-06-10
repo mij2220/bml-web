@@ -220,7 +220,7 @@ export default function EmployeesPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {([['Employee','full_name'],['P.No','employee_id'],['Unit','department_name'],['Designation','designation_name'],['Role','role'],['Status','status'],['Joined','joining_date']] as [string,string][]).map(([h,col]) => (
+                  {([['Employee','full_name'],['P.No','employee_id'],['Unit','department_name'],['Designation','designation_name'],['Role','role'],['Status','status'],['Created','created_at']] as [string,string][]).map(([h,col]) => (
                     <th key={h} onClick={() => toggleSort(col)}
                       className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">
                       {h}
