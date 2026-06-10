@@ -299,7 +299,7 @@ export default function EmployeeProfilePage() {
   ] as const;
 
   const filteredManagers = editForm.department_id
-    ? allManagers.filter(m => (m as any).department_id === editForm.department_id || ['hr_admin','super_admin'].includes((m as any).role))
+    ? allManagers.filter(m => (m as any).department_name === editForm.department_name || ['hr_admin','super_admin'].includes((m as any).role))
     : allManagers;
 
   return (
