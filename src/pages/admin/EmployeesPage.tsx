@@ -220,7 +220,7 @@ export default function EmployeesPage() {
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
-                  {([['Employee','full_name'],['P.No','employee_id'],['Unit','department_name'],['Designation','designation_name'],['Role','role'],['Status','status']] as [string,string][]).map(([h,col]) => (
+                  {([['Employee','full_name'],['P.No','employee_id'],['Unit','department_name'],['Designation','designation_name'],['Role','role'],['Status','status'],['Joined','joining_date']] as [string,string][]).map(([h,col]) => (
                     <th key={h} onClick={() => toggleSort(col)}
                       className="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3 cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">
                       {h}
@@ -252,11 +252,13 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3 text-sm font-mono text-slate-600">{emp.p_number || emp.employee_id}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{emp.department_name}</td>
                     <td className="px-4 py-3 text-sm text-slate-600">{emp.designation_name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{(emp as any).joining_date ? new Date((emp as any).joining_date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${roleColor[emp.role] ?? 'bg-slate-100 text-slate-600'}`}>
                         {emp.role?.replace('_', ' ')}
                       </span>
                     </td>
+                    <td className="px-4 py-3 text-sm text-slate-500">{(emp as any).joining_date ? new Date((emp as any).joining_date).toLocaleDateString('en-GB', {day:'2-digit',month:'short',year:'numeric'}) : '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${statusColor[emp.status] ?? 'bg-slate-100 text-slate-500'}`}>
                         {emp.status?.replace('_', ' ')}
