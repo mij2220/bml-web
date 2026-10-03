@@ -131,7 +131,7 @@ export default function Layout() {
           {/* ATTENDANCE */}
           {sectionLabel('Attendance')}
           {navItem('/clock',        Clock,           'Clock In / Out')}
-          {navItem('/timesheets',   ClipboardList,   'Timesheets')}
+          {/* HIDDEN: {navItem('/timesheets',   ClipboardList,   'Timesheets')} — backend GET /api/v1/attendance/ (list) not implemented yet */}
 
           {/* HR ADMIN */}
           {isHR && (
@@ -141,12 +141,12 @@ export default function Layout() {
               {navItem('/org-chart',         Trees,       'Org Chart')}
               {navItem('/departments',       Building2,   'Units')}
               {navItem('/leave-types',       Settings,    'Leave Types')}
-              {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')}
+              {/* HIDDEN: {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')} — backend /api/v1/holidays/ not implemented yet */}
               {/* HIDDEN: {navItem('/shifts',            Timer,       'Shifts')} */}
               {/* HIDDEN: {navItem('/branches',          Building,    'Branches')} */}
               {navItem('/quota-management',   Building,    'Quota Management')}
               {/* HIDDEN: {navItem('/projects',          FolderOpen,  'Projects')} */}
-              {navItem('/announcements',     Megaphone,   'Announcements')}
+              {/* HIDDEN: {navItem('/announcements',     Megaphone,   'Announcements')} — backend /api/v1/announcements/ not implemented yet */}
               {navItem('/reports',           BarChart3,   'Reports')}
               {navItem('/audit-log',         ScrollText,  'Audit Log')}
               {/* HIDDEN: {navItem('/billing',           CreditCard,  'Billing')} */}
