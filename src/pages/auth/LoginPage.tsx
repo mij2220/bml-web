@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { login } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
+import { homePathFor } from '../../hooks/useAuth'
 import { Eye, EyeOff, BookOpen } from 'lucide-react'
 
 const DEMO_USERS = [
@@ -29,7 +30,7 @@ export default function LoginPage() {
     try {
       const { data } = await login(email, password)
       setAuth(data.user, data.access, data.refresh)
-      navigate('/dashboard')
+      navigate(homePathFor(data.user?.role))
     } catch (err: any) {
       setError(err.response?.data?.detail || err.response?.data?.message || 'Invalid email or password.')
     } finally {

@@ -15,6 +15,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
     email:'', role:'employee', employee_id:'', full_name:'', gender:'male',
     joining_date: new Date().toISOString().split('T')[0], employment_type:'permanent',
     department_id:'', designation_id:'', reporting_manager_id:'', phone:'', salary_grade:'',
+    is_shared_account:'false',
   })
 
   useEffect(() => {
@@ -37,7 +38,7 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
     if (missing.length) return setError('Please fill all required fields (*)')
     setSaving(true)
     try {
-      await client.post('/employees/', { ...form, reporting_manager_id: form.reporting_manager_id||undefined })
+      await client.post('/employees/', { ...form, is_shared_account: form.is_shared_account === 'true', reporting_manager_id: form.reporting_manager_id||undefined })
       onCreated(); onClose()
     } catch (e:any) {
       const d = e.response?.data
@@ -89,7 +90,8 @@ export default function AddEmployeeModal({ onClose, onCreated }: Props) {
             {inp('Salary Grade','salary_grade',{placeholder:'Grade 5'})}
             {sel('Gender *','gender',[{v:'male',l:'Male'},{v:'female',l:'Female'},{v:'other',l:'Other'}])}
             {sel('Employment Type *','employment_type',[{v:'permanent',l:'Permanent'},{v:'contractual',l:'Contractual'},{v:'probation',l:'Probation'},{v:'part_time',l:'Part Time'}])}
-            {sel('Role *','role',[{v:'employee',l:'Employee'},{v:'manager',l:'Manager'},{v:'hr_admin',l:'Admin'}])}
+            {sel('Role *','role',[{v:'employee',l:'Employee'},{v:'manager',l:'Manager (Supervisor / SIC)'},{v:'rota_manager',l:'Rota Manager (view only)'},{v:'hr_admin',l:'Admin'}])}
+            {sel('Login used by','is_shared_account',[{v:'false',l:'One person'},{v:'true',l:'Several people (shared login)'}])}
             {sel('Department *','department_id',depts.map(d=>({v:d.id,l:d.name})))}
             {sel('Designation *','designation_id',filteredDesigs.map(d=>({v:d.id,l:d.name})))}
             {sel('Reporting Manager','reporting_manager_id',filteredManagers.map(m=>({v:m.id,l:m.full_name})))}

@@ -1,10 +1,29 @@
 import { useEffect, useState } from 'react'
 import { downloadCSV } from '../../utils/tableUtils'
-import { getPendingApprovals, approveLeave, rejectLeave, getMyLeaves } from '../../api/leaves'
+import { getPendingApprovals, approveLeave, rejectLeave, returnLeave, getMyLeaves } from '../../api/leaves'
 import { getEmployees } from '../../api/employees'
 import client from '../../api/client'
-import { CheckCircle, XCircle, Users, ChevronDown, ChevronUp, History, Clock , Download } from 'lucide-react'
+import { CheckCircle, XCircle, Users, ChevronDown, ChevronUp, History, Clock , Download, CornerUpLeft } from 'lucide-react'
 import type { LeaveApplication, Employee } from '../../types'
+import StageBadge, { stageLabelOf } from '../../components/leaves/StageBadge'
+import { useAuth } from '../../hooks/useAuth'
+
+type ActionType = 'approve' | 'reject' | 'return'
+
+const actionCopy: Record<ActionType, { title: string; confirm: string; placeholder: string; needsRemark: boolean; panel: string; button: string }> = {
+  approve: {
+    title: 'Approve', confirm: 'Confirm approval', placeholder: 'Add a comment (optional)...', needsRemark: false,
+    panel: 'bg-emerald-50 border-emerald-100', button: 'bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300',
+  },
+  reject: {
+    title: 'Reject', confirm: 'Confirm rejection', placeholder: 'Reason for rejecting (required)...', needsRemark: true,
+    panel: 'bg-red-50 border-red-100', button: 'bg-red-500 hover:bg-red-600 disabled:bg-red-300',
+  },
+  return: {
+    title: 'Return to employee', confirm: 'Return to employee', placeholder: 'Remarks for the employee: what should be corrected? (required)', needsRemark: true,
+    panel: 'bg-violet-50 border-violet-100', button: 'bg-violet-600 hover:bg-violet-700 disabled:bg-violet-300',
+  },
+}
 
 function AssignReplacementModal({
   leave, onClose, onDone,
@@ -111,11 +130,21 @@ function AssignReplacementModal({
 }
 
 export default function ApprovalsPage() {
+  // Shared login (e.g. the Shift Engineers' common ID): every action is signed
+  // with the acting person's own name and P.No.
+  const { isSharedAccount: sharedFromLogin } = useAuth()
+  // If this browser still holds an older sign-in that does not know the login is
+  // shared, the server says so on the first action; show the fields from then on.
+  const [serverWantsSignature, setServerWantsSignature] = useState(false)
+  const isSharedAccount = sharedFromLogin || serverWantsSignature
   const [apps, setApps] = useState<LeaveApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [actionId, setActionId] = useState<string | null>(null)
-  const [actionType, setActionType] = useState<'approve' | 'reject' | null>(null)
+  const [actionType, setActionType] = useState<ActionType | null>(null)
   const [comment, setComment] = useState('')
+  const [signerName, setSignerName] = useState('')
+  const [signerPNo, setSignerPNo] = useState('')
+  const [actionError, setActionError] = useState('')
   const [processing, setProcessing] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [replacementFor, setReplacementFor] = useState<LeaveApplication | null>(null)
@@ -137,7 +166,7 @@ export default function ApprovalsPage() {
   const handleHistDownload = () => {
     downloadCSV('team-leave-history.csv',
       ['Employee', 'Leave Type', 'Start Date', 'End Date', 'Days', 'Status', 'Applied'],
-      history.map((l: any) => [l.employee_name, l.leave_type_name, l.start_date, l.end_date, l.total_days, l.status, l.applied_at?.slice(0,10)])
+      history.map((l: any) => [l.employee_name, l.leave_type_name, l.start_date, l.end_date, l.total_days, stageLabelOf(l), l.applied_at?.slice(0,10)])
     )
   }
   const [historyStatus, setHistoryStatus] = useState('')
@@ -231,15 +260,43 @@ export default function ApprovalsPage() {
     setAssignSaving(false)
   }
 
+  const openAction = (id: string, type: ActionType) => {
+    setActionId(id); setActionType(type); setComment(''); setActionError('')
+    // The signature is typed afresh for every action: on a shared login the
+    // next action may be taken by a different person.
+    setSignerName(''); setSignerPNo('')
+  }
+
+  const closeAction = () => { setActionId(null); setActionType(null); setActionError('') }
+
   const handleAction = async () => {
     if (!actionId || !actionType) return
+    const copy = actionCopy[actionType]
+    if (copy.needsRemark && !comment.trim()) {
+      setActionError(actionType === 'return'
+        ? 'Write remarks so the employee knows what to correct.'
+        : 'Give the reason for rejecting.')
+      return
+    }
+    if (isSharedAccount && (!signerName.trim() || !signerPNo.trim())) {
+      setActionError('This is a shared login. Enter your own name and P.No. to sign.')
+      return
+    }
+    const signature = isSharedAccount
+      ? { signer_name: signerName.trim(), signer_p_number: signerPNo.trim() }
+      : {}
     setProcessing(true)
+    setActionError('')
     try {
-      if (actionType === 'approve') await approveLeave(actionId, comment)
-      else await rejectLeave(actionId, comment)
-      setActionId(null); setActionType(null); setComment('')
+      if (actionType === 'approve') await approveLeave(actionId, comment, signature)
+      else if (actionType === 'reject') await rejectLeave(actionId, comment.trim(), signature)
+      else await returnLeave(actionId, comment.trim(), signature)
+      closeAction(); setComment('')
       await load()
-    } catch (e: any) { alert(e.response?.data?.message ?? 'Action failed.') }
+    } catch (e: any) {
+      if (e.response?.data?.errors?.signer_name) setServerWantsSignature(true)
+      setActionError(e.response?.data?.message ?? 'Action failed. Please try again.')
+    }
     setProcessing(false)
   }
 
@@ -258,6 +315,7 @@ export default function ApprovalsPage() {
     rejected: 'bg-red-100 text-red-700',
     cancelled: 'bg-slate-100 text-slate-500',
     expired:   'bg-orange-100 text-orange-700',
+    returned:  'bg-violet-100 text-violet-800',
   }
 
   if (loading) return (
@@ -291,6 +349,7 @@ export default function ApprovalsPage() {
               <option value="">All Statuses</option>
               <option value="approved">Approved</option>
               <option value="rejected">Rejected</option>
+              <option value="returned">Returned to employee</option>
               <option value="cancelled">Cancelled</option>
             </select>
             <input value={historySearch} onChange={e => setHistorySearch(e.target.value)}
@@ -606,7 +665,7 @@ export default function ApprovalsPage() {
                         <p className="text-xs text-slate-500 mt-0.5">{(app as any).department_name} · Applied {new Date(app.applied_at).toLocaleDateString()}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${SC[app.status] ?? ''}`}>{app.status}</span>
+                        <StageBadge leave={app} />
                         {isPast && (
                           <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">⚠ Overdue</span>
                         )}
@@ -623,13 +682,18 @@ export default function ApprovalsPage() {
                       <span className="font-semibold text-slate-900">{app.total_days}d</span>
                     </div>
                     <div className="flex items-center gap-2 mt-3 flex-wrap">
-                        <button onClick={() => { setActionId(app.id); setActionType('approve'); setComment('') }}
+                        <button onClick={() => openAction(app.id, 'approve')}
                           className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-lg border border-emerald-200">
                           <CheckCircle size={13} /> Approve
                         </button>
-                      <button onClick={() => { setActionId(app.id); setActionType('reject'); setComment('') }}
+                      <button onClick={() => openAction(app.id, 'reject')}
                         className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold rounded-lg border border-red-200">
                         <XCircle size={13} /> Reject
+                      </button>
+                      <button onClick={() => openAction(app.id, 'return')}
+                        title="Send back to the employee with remarks"
+                        className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-50 hover:bg-violet-100 text-violet-700 text-xs font-semibold rounded-lg border border-violet-200">
+                        <CornerUpLeft size={13} /> Return
                       </button>
                       {replacementEmp ? (
                         <button onClick={() => setReplacementFor(app)}
@@ -657,7 +721,7 @@ export default function ApprovalsPage() {
                 {isExpanded && (
                   <div className="border-t border-slate-100 px-4 py-3 bg-slate-50">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {[['Reference', app.reference_number], ['Leave Type', app.leave_type_name], ['Duration', `${app.total_days} days`], ['Approval Level', `Level ${app.current_approval_level}`], ...((app as any).duty_date_for_cd ? [['Date Worked on Rest Day', (app as any).duty_date_for_cd]] : [])].map(([l, v]) => (
+                      {[['Reference', app.reference_number], ['Leave Type', app.leave_type_name], ['Duration', `${app.total_days} days`], ['Stage', stageLabelOf(app)], ...((app as any).duty_date_for_cd ? [['Date Worked on Rest Day', (app as any).duty_date_for_cd]] : [])].map(([l, v]) => (
                         <div key={l}><p className="text-xs text-slate-400">{l}</p><p className="text-sm font-medium text-slate-900 mt-0.5">{v}</p></div>
                       ))}
                     </div>
@@ -673,17 +737,45 @@ export default function ApprovalsPage() {
                   </div>
                 )}
 
-                {isActioning && (
-                  <div className={`border-t px-4 py-4 ${actionType === 'approve' ? 'bg-emerald-50 border-emerald-100' : 'bg-red-50 border-red-100'}`}>
-                    <p className="text-sm font-semibold mb-2 text-slate-700 capitalize">{actionType} — {app.employee_name}'s {app.leave_type_name}</p>
-                    <textarea value={comment} onChange={e => setComment(e.target.value)} rows={2}
-                      placeholder="Add a comment (optional)..."
+                {isActioning && actionType && (
+                  <div className={`border-t px-4 py-4 ${actionCopy[actionType].panel}`}>
+                    <p className="text-sm font-semibold mb-2 text-slate-700">{actionCopy[actionType].title} — {app.employee_name}'s {app.leave_type_name}</p>
+                    {actionType === 'return' && (
+                      <p className="text-xs text-violet-900 mb-2">
+                        The application goes back to {app.employee_name} with your remarks. After correcting it they resubmit, and approval starts again from the first step.
+                      </p>
+                    )}
+                    <textarea value={comment} onChange={e => { setComment(e.target.value); setActionError('') }} rows={2}
+                      placeholder={actionCopy[actionType].placeholder}
+                      aria-label={actionCopy[actionType].needsRemark ? 'Remarks (required)' : 'Comment (optional)'}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 resize-none mb-3" />
+                    {isSharedAccount && (
+                      <div className="bg-white border border-slate-200 rounded-xl p-3 mb-3">
+                        <p className="text-xs font-semibold text-slate-700 mb-2">Sign with your own name and P.No. (this is a shared login)</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div>
+                            <label htmlFor={`signer-name-${app.id}`} className="block text-xs text-slate-500 mb-1">Your name</label>
+                            <input id={`signer-name-${app.id}`} value={signerName} onChange={e => { setSignerName(e.target.value); setActionError('') }}
+                              autoComplete="off" maxLength={150}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                          </div>
+                          <div>
+                            <label htmlFor={`signer-pno-${app.id}`} className="block text-xs text-slate-500 mb-1">Your P.No.</label>
+                            <input id={`signer-pno-${app.id}`} value={signerPNo} onChange={e => { setSignerPNo(e.target.value); setActionError('') }}
+                              autoComplete="off" maxLength={50}
+                              className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {actionError && (
+                      <p role="alert" className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2 mb-3">{actionError}</p>
+                    )}
                     <div className="flex gap-2">
-                      <button onClick={() => setActionId(null)} className="text-sm text-slate-500 px-4 py-2 rounded-lg hover:bg-white">Cancel</button>
+                      <button onClick={closeAction} className="text-sm text-slate-500 px-4 py-2 rounded-lg hover:bg-white">Cancel</button>
                       <button onClick={handleAction} disabled={processing}
-                        className={`flex-1 text-white text-sm font-semibold py-2 rounded-xl transition-colors ${actionType === 'approve' ? 'bg-emerald-500 hover:bg-emerald-600 disabled:bg-emerald-300' : 'bg-red-500 hover:bg-red-600 disabled:bg-red-300'}`}>
-                        {processing ? 'Processing...' : `Confirm ${actionType}`}
+                        className={`flex-1 text-white text-sm font-semibold py-2 rounded-xl transition-colors ${actionCopy[actionType].button}`}>
+                        {processing ? 'Processing...' : actionCopy[actionType].confirm}
                       </button>
                     </div>
                   </div>

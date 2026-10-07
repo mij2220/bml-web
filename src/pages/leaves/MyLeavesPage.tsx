@@ -3,18 +3,25 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import client from '../../api/client'
 import { getMyLeaves, cancelLeave, getLeaveDetail } from '../../api/leaves'
-import { Plus, Eye, XCircle, ChevronRight } from 'lucide-react'
+import { Plus, Eye, XCircle, ChevronRight, Pencil, CornerUpLeft } from 'lucide-react'
 import type { LeaveApplication } from '../../types'
+import StageBadge, { stageLabelOf } from '../../components/leaves/StageBadge'
+import { useAuth } from '../../hooks/useAuth'
 
-const statusColor: Record<string, string> = {
-  pending:  'bg-amber-100 text-amber-700 border border-amber-200',
-  approved: 'bg-emerald-100 text-emerald-700 border border-emerald-200',
-  rejected: 'bg-red-100 text-red-700 border border-red-200',
-  cancelled:'bg-slate-100 text-slate-500 border border-slate-200',
-  expired:  'bg-orange-100 text-orange-700 border border-orange-200',
+// What each row in the approval history looks like, by action
+const actionLook: Record<string, { mark: string; cls: string; word: string }> = {
+  approved:  { mark: '✓', cls: 'bg-emerald-100 text-emerald-700', word: 'Approved' },
+  rejected:  { mark: '✗', cls: 'bg-red-100 text-red-700',         word: 'Rejected' },
+  returned:  { mark: '↩', cls: 'bg-violet-100 text-violet-800',   word: 'Returned' },
+  delegated: { mark: '→', cls: 'bg-slate-200 text-slate-700',     word: 'Delegated' },
 }
+const levelName = (level: number) => level === 1 ? 'Shift Supervisor' : level === 2 ? 'SIC' : level === 0 ? 'Admin' : `Level ${level}`
 
-function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) {
+function LeaveDetailModal({ id, onClose, onEdit, onCancel }: {
+  id: string; onClose: () => void
+  onEdit: (id: string) => void
+  onCancel: (leave: LeaveApplication) => void
+}) {
   const [leave, setLeave] = useState<LeaveApplication | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -53,9 +60,7 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                     {leave.start_date} → {leave.end_date} · {leave.total_days} days
                   </p>
                 </div>
-                <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColor[leave.status]}`}>
-                  {leave.status}
-                </span>
+                <StageBadge leave={leave} />
                 <button
                   
                   className="mt-2 flex items-center gap-1.5 text-xs bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white px-3 py-1.5 rounded-lg transition-all font-medium shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
@@ -93,6 +98,19 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
             </div>
 
             <div className="p-5 space-y-4">
+              {leave.status === 'returned' && (
+                <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
+                  <p className="text-sm font-semibold text-violet-900 flex items-center gap-1.5">
+                    <CornerUpLeft size={14} /> Returned{leave.returned_by ? ` by ${leave.returned_by}` : ''} for correction
+                  </p>
+                  {leave.returned_remark && (
+                    <p className="text-sm text-violet-900 mt-1.5 leading-relaxed">“{leave.returned_remark}”</p>
+                  )}
+                  <p className="text-xs text-violet-800 mt-2">
+                    Correct the application and resubmit it. Approval then starts again from the first step.
+                  </p>
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-slate-50 rounded-xl p-3">
                   <p className="text-xs text-slate-500 mb-1">Applied On</p>
@@ -136,34 +154,63 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
                 <div>
                   <p className="text-xs text-slate-500 mb-2">Approval History</p>
                   <div className="space-y-2">
-                    {leave.approvals.map(a => (
-                      <div key={a.id} className="flex items-start gap-3 bg-slate-50 rounded-xl p-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
-                          a.action === 'approved' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-                        }`}>
-                          {a.action === 'approved' ? '✓' : '✗'}
+                    {leave.approvals.map(a => {
+                      const look = actionLook[a.action] ?? { mark: '•', cls: 'bg-slate-200 text-slate-700', word: a.action }
+                      return (
+                        <div key={a.id} className={`flex items-start gap-3 bg-slate-50 rounded-xl p-3 ${a.is_superseded ? 'opacity-60' : ''}`}>
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${look.cls}`}>
+                            {look.mark}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{a.signed_by || a.approver_name}</p>
+                            <p className="text-xs text-slate-500">
+                              {look.word} as {levelName(a.level)} · {new Date(a.actioned_at).toLocaleDateString()}
+                              {a.is_superseded ? ' · before resubmission' : ''}
+                            </p>
+                            {a.comment && (
+                              <p className="text-xs text-slate-600 mt-1 italic">"{a.comment}"</p>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium">{a.approver_name}</p>
-                          <p className="text-xs text-slate-500 capitalize">
-                            {a.action} · {new Date(a.actioned_at).toLocaleDateString()}
-                          </p>
-                          {a.comment && (
-                            <p className="text-xs text-slate-600 mt-1 italic">"{a.comment}"</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 </div>
               )}
 
               {leave.status === 'pending' && (
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700">
-                  ⏳ Awaiting Level {leave.current_approval_level} approval
+                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                  ⏳ {stageLabelOf(leave)}{leave.waiting_for ? ` — waiting for ${leave.waiting_for}` : ''}
                 </div>
               )}
+
+              {leave.permissions && !leave.permissions.can_cancel && leave.permissions.cancel_blocked_reason && (
+                <p className="text-xs text-slate-600 bg-slate-50 border border-slate-200 rounded-xl p-3">
+                  {leave.permissions.cancel_blocked_reason}
+                </p>
+              )}
             </div>
+
+            {(leave.permissions?.can_edit || leave.permissions?.can_cancel) && (
+              <div className="px-5 pb-3 flex gap-2 flex-wrap">
+                {leave.permissions?.can_edit && (
+                  <button
+                    onClick={() => onEdit(leave.id)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition-colors"
+                  >
+                    <Pencil size={14} /> {leave.status === 'returned' ? 'Correct and resubmit' : 'Edit application'}
+                  </button>
+                )}
+                {leave.permissions?.can_cancel && (
+                  <button
+                    onClick={() => onCancel(leave)}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-sm font-semibold rounded-xl border border-red-200 transition-colors"
+                  >
+                    <XCircle size={14} /> {leave.status === 'returned' ? 'Withdraw application' : leave.status === 'approved' ? 'Cancel leave' : 'Cancel application'}
+                  </button>
+                )}
+              </div>
+            )}
 
             <div className="px-5 pb-8 md:pb-5">
               <button
@@ -184,11 +231,12 @@ function LeaveDetailModal({ id, onClose }: { id: string; onClose: () => void }) 
 
 // Mobile card component
 function LeaveCard({
-  l, onView, onCancel,
+  l, onView, onCancel, onEdit,
 }: {
   l: LeaveApplication
   onView: () => void
   onCancel: (e: React.MouseEvent) => void
+  onEdit: (e: React.MouseEvent) => void
 }) {
   return (
     <div
@@ -203,23 +251,34 @@ function LeaveCard({
           />
           <span className="font-semibold text-slate-900 text-sm">{l.leave_type_name}</span>
         </div>
-        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize flex-shrink-0 ${statusColor[l.status]}`}>
-          {l.status}
-        </span>
+        <StageBadge leave={l} className="flex-shrink-0" />
       </div>
       <div className="flex items-center justify-between text-xs text-slate-500 mb-3">
         <span>{l.start_date} → {l.end_date}</span>
         <span className="font-bold text-slate-900">{l.total_days}d</span>
       </div>
+      {l.status === 'returned' && l.returned_remark && (
+        <p className="text-xs text-violet-900 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-2 mb-3">
+          Remarks: {l.returned_remark}
+        </p>
+      )}
       <div className="flex items-center justify-between">
         <span className="text-xs text-slate-400 font-mono">{l.reference_number}</span>
         <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-          {l.status === 'pending' && (
+          {canEdit(l) && (
+            <button
+              onClick={onEdit}
+              className="text-xs text-emerald-700 font-semibold px-3 py-1 bg-emerald-50 rounded-lg active:bg-emerald-100"
+            >
+              {l.status === 'returned' ? 'Correct' : 'Edit'}
+            </button>
+          )}
+          {canCancel(l) && (
             <button
               onClick={onCancel}
               className="text-xs text-red-500 font-semibold px-3 py-1 bg-red-50 rounded-lg active:bg-red-100"
             >
-              Cancel
+              {l.status === 'returned' ? 'Withdraw' : 'Cancel'}
             </button>
           )}
         </div>
@@ -228,8 +287,16 @@ function LeaveCard({
   )
 }
 
+// The server decides what is allowed. If it did not say (older API), fall back
+// to the previous behaviour: only a pending application can be cancelled.
+const canCancel = (l: LeaveApplication) => l.permissions ? l.permissions.can_cancel : l.status === 'pending'
+const canEdit = (l: LeaveApplication) => !!l.permissions?.can_edit
+
 export default function MyLeavesPage() {
   const navigate = useNavigate()
+  const { isHR } = useAuth()
+  // Admin's menu is unchanged, so the page keeps its old name there
+  const pageTitle = isHR ? 'My Leaves' : 'My Applications'
   const [leaves, setLeaves] = useState<LeaveApplication[]>([])
   const [sortKey, setSortKey]   = useState<string | null>(null)
   const [sortDir, setSortDir]   = useState<'asc' | 'desc' | null>('asc')
@@ -253,7 +320,7 @@ export default function MyLeavesPage() {
   const handleDownload = () => {
     downloadCSV('my-leaves.csv',
       ['Reference', 'Type', 'Start Date', 'End Date', 'Days', 'Status', 'Applied'],
-      sortedLeaves.map((l: any) => [l.reference_number, l.leave_type_name, l.start_date, l.end_date, l.total_days, l.status, l.applied_at?.slice(0,10)])
+      sortedLeaves.map((l: any) => [l.reference_number, l.leave_type_name, l.start_date, l.end_date, l.total_days, stageLabelOf(l), l.applied_at?.slice(0,10)])
     )
   }
   const [loading, setLoading] = useState(true)
@@ -278,7 +345,7 @@ export default function MyLeavesPage() {
   }
 
   useEffect(() => {
-    document.getElementById('page-title')!.textContent = 'My Leaves'
+    document.getElementById('page-title')!.textContent = pageTitle
     load()
   }, [statusFilter])
 
@@ -287,16 +354,31 @@ export default function MyLeavesPage() {
     return () => clearTimeout(t)
   }, [search])
 
-  const handleCancel = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!confirm('Cancel this leave application?')) return
+  const cancelNow = async (l: LeaveApplication) => {
+    const what = l.status === 'returned' ? 'Withdraw this application?'
+      : l.status === 'approved' ? 'Cancel this approved leave? Your Supervisor and SIC will be told.'
+      : 'Cancel this leave application?'
+    if (!confirm(what)) return
     try {
-      await cancelLeave(id)
+      await cancelLeave(l.id)
+      setViewId(null)
       load()
     } catch (err: any) {
       alert(err.response?.data?.message ?? 'Could not cancel.')
     }
   }
+
+  const handleCancel = (l: LeaveApplication, e: React.MouseEvent) => {
+    e.stopPropagation()
+    cancelNow(l)
+  }
+
+  const goEdit = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation()
+    navigate(`/apply-leave?edit=${id}`)
+  }
+
+  const returnedLeaves = leaves.filter(l => l.status === 'returned')
 
   const counts = {
     total: leaves.length,
@@ -307,6 +389,32 @@ export default function MyLeavesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-4">
+      {/* Returned applications need the employee's action */}
+      {returnedLeaves.length > 0 && (
+        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4">
+          <p className="text-sm font-semibold text-violet-900 flex items-center gap-1.5">
+            <CornerUpLeft size={15} />
+            {returnedLeaves.length === 1
+              ? '1 application was returned to you for correction'
+              : `${returnedLeaves.length} applications were returned to you for correction`}
+          </p>
+          <ul className="mt-2 space-y-2">
+            {returnedLeaves.map(l => (
+              <li key={l.id} className="flex items-start justify-between gap-3 flex-wrap">
+                <p className="text-sm text-violet-900 min-w-0">
+                  <span className="font-mono text-xs">{l.reference_number}</span> · {l.leave_type_name}, {l.start_date} → {l.end_date}
+                  {l.returned_remark && <span className="block text-violet-800 mt-0.5">Remarks{l.returned_by ? ` from ${l.returned_by}` : ''}: {l.returned_remark}</span>}
+                </p>
+                <button onClick={() => goEdit(l.id)}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-700 px-3 py-1.5 rounded-lg flex-shrink-0">
+                  <Pencil size={13} /> Correct and resubmit
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stat cards */}
       <div className="grid grid-cols-4 gap-2 md:gap-3">
         {[
@@ -332,7 +440,7 @@ export default function MyLeavesPage() {
       {/* Filters + action */}
       <div className="flex items-center gap-2 flex-wrap">
         <div className="flex gap-1 md:gap-2 flex-wrap flex-1">
-          {['', 'pending', 'approved', 'rejected', 'cancelled', 'expired'].map(s => (
+          {['', 'pending', 'returned', 'approved', 'rejected', 'cancelled', 'expired'].map(s => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
@@ -378,13 +486,14 @@ export default function MyLeavesPage() {
                 key={l.id}
                 l={l}
                 onView={() => setViewId(l.id)}
-                onCancel={e => handleCancel(l.id, e)}
+                onCancel={e => handleCancel(l, e)}
+                onEdit={e => goEdit(l.id, e)}
               />
             ))}
           </div>
 
           {/* Desktop: table */}
-          <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-hidden">
+          <div className="hidden md:block bg-white rounded-xl border border-slate-200 overflow-x-auto">
             <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
@@ -414,9 +523,7 @@ export default function MyLeavesPage() {
                     <td className="px-4 py-3 text-sm text-slate-600">{l.start_date} → {l.end_date}</td>
                     <td className="px-4 py-3 text-sm font-bold">{l.total_days}d</td>
                     <td className="px-4 py-3">
-                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColor[l.status]}`}>
-                        {l.status}
-                      </span>
+                      <StageBadge leave={l} />
                     </td>
                     <td className="px-4 py-3 text-sm text-slate-500">
                       {new Date(l.applied_at).toLocaleDateString()}
@@ -429,13 +536,24 @@ export default function MyLeavesPage() {
                         >
                           <Eye size={13} /> View
                         </button>
-                        {l.status === 'pending' && (
+                        {canEdit(l) && (
                           <button
-                            onClick={e => handleCancel(l.id, e)}
+                            onClick={e => goEdit(l.id, e)}
+                            className="flex items-center gap-1 text-xs text-emerald-700 hover:text-emerald-800 font-medium px-2 py-1 rounded-lg hover:bg-emerald-50"
+                          >
+                            <Pencil size={13} /> {l.status === 'returned' ? 'Correct' : 'Edit'}
+                          </button>
+                        )}
+                        {canCancel(l) && (
+                          <button
+                            onClick={e => handleCancel(l, e)}
                             className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 font-medium px-2 py-1 rounded-lg hover:bg-red-50"
                           >
-                            <XCircle size={13} /> Cancel
+                            <XCircle size={13} /> {l.status === 'returned' ? 'Withdraw' : 'Cancel'}
                           </button>
+                        )}
+                        {!canCancel(l) && l.permissions?.cancel_blocked_reason && (
+                          <span className="text-xs text-slate-500" title={l.permissions.cancel_blocked_reason}>Cancel via Supervisor</span>
                         )}
                         <ChevronRight size={14} className="text-slate-300" />
                       </div>
@@ -449,7 +567,14 @@ export default function MyLeavesPage() {
       )}
 
       {/* Detail modal */}
-      {viewId && <LeaveDetailModal id={viewId} onClose={() => setViewId(null)} />}
+      {viewId && (
+        <LeaveDetailModal
+          id={viewId}
+          onClose={() => setViewId(null)}
+          onEdit={id => goEdit(id)}
+          onCancel={l => cancelNow(l)}
+        />
+      )}
     </div>
   )
 }

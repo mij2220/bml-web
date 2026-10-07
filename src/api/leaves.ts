@@ -1,5 +1,8 @@
 import client from './client'
-import type { ApiResponse, LeaveApplication, LeaveBalance, LeaveType } from '../types'
+import type { ApiResponse, CalendarLeave, LeaveApplication, LeaveBalance, LeaveType, TeamDashboard } from '../types'
+
+/** Name and P.No. typed by the person acting from a shared login. */
+export interface Signature { signer_name?: string; signer_p_number?: string }
 
 export const getLeaveTypes = () =>
   client.get<ApiResponse<LeaveType[]>>('/leave-types/')
@@ -18,20 +21,30 @@ export const applyLeave = (data: {
   is_half_day?: boolean
 }) => client.post<ApiResponse<LeaveApplication>>('/leaves/', data)
 
-export const cancelLeave = (id: string) =>
-  client.post(`/leaves/${id}/cancel/`)
+export const cancelLeave = (id: string, reason?: string) =>
+  client.post(`/leaves/${id}/cancel/`, reason ? { reason } : {})
 
-export const approveLeave = (id: string, comment: string) =>
-  client.post(`/leaves/${id}/approve/`, { comment })
+export const approveLeave = (id: string, comment: string, signature: Signature = {}) =>
+  client.post(`/leaves/${id}/approve/`, { comment, ...signature })
 
-export const rejectLeave = (id: string, comment: string) =>
-  client.post(`/leaves/${id}/reject/`, { comment })
+export const rejectLeave = (id: string, comment: string, signature: Signature = {}) =>
+  client.post(`/leaves/${id}/reject/`, { comment, ...signature })
+
+/** Send the application back to the employee with remarks (they correct it and resubmit). */
+export const returnLeave = (id: string, comment: string, signature: Signature = {}) =>
+  client.post(`/leaves/${id}/return/`, { comment, ...signature })
 
 export const getPendingApprovals = () =>
   client.get<ApiResponse<LeaveApplication[]>>('/leaves/pending-approvals/')
 
-export const getTeamCalendar = (month: string) =>
-  client.get<ApiResponse<LeaveApplication[]>>('/leaves/calendar/', { params: { month } })
+export const getTeamCalendar = (month: string, includePending = false) =>
+  client.get<ApiResponse<CalendarLeave[]>>('/leaves/calendar/', {
+    params: includePending ? { month, include_pending: 'true' } : { month },
+  })
+
+/** Employee Leave Dashboard for the Shift Supervisor / SIC */
+export const getTeamDashboard = (params?: Record<string, string>) =>
+  client.get<ApiResponse<TeamDashboard>>('/leaves/team-dashboard/', { params })
 
 export const getMeBalances = (year?: number) =>
   client.get<ApiResponse<LeaveBalance[]>>('/employees/me/balances/', {
@@ -43,4 +56,6 @@ export const getMyBalances = (employeeId: string, year?: number) =>
     params: year ? { year } : {}
   })
 
-export const updateLeave = (id: string, data: any) => client.patch(`/leaves/${id}/`, data)
+/** Employee edits their own application; on a returned application this also resubmits it. */
+export const updateLeave = (id: string, data: Record<string, unknown>) =>
+  client.patch<ApiResponse<LeaveApplication>>(`/leaves/${id}/`, data)

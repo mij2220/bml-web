@@ -7,7 +7,7 @@ import { CalendarDays, ChevronRight, Plus, Clock, AlertCircle, FileText, CheckCi
 import type { LeaveBalance, LeaveApplication } from '../../types'
 
 export default function DashboardPage() {
-  const { user, isManager, isHR } = useAuth()
+  const { user, isManager, isHR, isSharedAccount } = useAuth()
   const navigate = useNavigate()
   const [balances, setBalances] = useState<LeaveBalance[]>([])
   const [recentLeaves, setRecentLeaves] = useState<LeaveApplication[]>([])
@@ -36,12 +36,16 @@ export default function DashboardPage() {
   useEffect(() => { document.getElementById('page-title')!.textContent = 'Dashboard'; load() }, [])
 
   const handleApprove = async (id: string) => {
+    // A shared login must sign each action with a name and P.No. — that form is on the approvals screen
+    if (isSharedAccount) { navigate('/approvals'); return }
     setProcessing(true); setActionId(id)
     try { await approveLeave(id, ''); await load() } catch {}
     setProcessing(false); setActionId(null)
   }
   const handleReject = async (id: string) => {
-    const comment = prompt('Reason for rejection (optional):') ?? ''
+    if (isSharedAccount) { navigate('/approvals'); return }
+    const comment = (prompt('Reason for rejection (required):') ?? '').trim()
+    if (!comment) return
     setProcessing(true); setActionId(id)
     try { await rejectLeave(id, comment); await load() } catch {}
     setProcessing(false); setActionId(null)
@@ -56,6 +60,7 @@ export default function DashboardPage() {
     pending: 'bg-amber-100 text-amber-700',
     approved: 'bg-emerald-100 text-emerald-700',
     rejected: 'bg-red-100 text-red-700',
+    returned: 'bg-violet-100 text-violet-800',
   }
 
   if (loading) return (
@@ -73,10 +78,12 @@ export default function DashboardPage() {
         <p className="text-slate-400 text-sm mt-0.5 capitalize">{(user as any)?.designation_name || user?.role?.replace('_', ' ')} · {(user as any)?.department}</p>
         {/* Quick actions */}
         <div className="flex gap-2 mt-4 flex-wrap">
+          {!isSharedAccount && (
           <button onClick={() => navigate('/apply-leave')}
             className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
             <Plus size={15}/> Apply for Leave
           </button>
+          )}
           <button onClick={() => navigate('/clock')}
             className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors border border-white/20">
             <Clock size={15}/> Clock In / Out
@@ -231,7 +238,7 @@ export default function DashboardPage() {
                     <p className="text-xs text-slate-500 mt-0.5">{l.start_date} → {l.end_date}</p>
                   </div>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${statusColor[l.status] ?? 'bg-slate-100 text-slate-500'}`}>
-                    {l.status}
+                    {l.stage_label ?? l.status}
                   </span>
                   <ChevronRight size={14} className="text-slate-300 flex-shrink-0"/>
                 </button>

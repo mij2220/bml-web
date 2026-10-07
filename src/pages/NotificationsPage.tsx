@@ -5,7 +5,7 @@ import type { Notification } from '../types'
 
 const typeIcon: Record<string, string> = {
   leave_applied: '📋', leave_approved: '✅', leave_rejected: '❌',
-  leave_cancelled: '🚫', replacement_needed: '🔄', replacement_assigned: '👤',
+  leave_cancelled: '🚫', leave_returned: '↩️', replacement_needed: '🔄', replacement_assigned: '👤',
   timesheet_submitted: '📊', timesheet_approved: '✔️', balance_expiry: '⚠️', announcement: '📢',
 }
 

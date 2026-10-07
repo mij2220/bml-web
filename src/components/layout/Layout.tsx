@@ -2,24 +2,43 @@ import { useState, useEffect } from 'react'
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useAuthStore } from '../../store/authStore'
-import { logout } from '../../api/auth'
+import { logout, getMe } from '../../api/auth'
 import { getNotificationCount } from '../../api/notifications'
 import {
   LayoutDashboard, CalendarDays, Clock, FileText, Users,
   Settings, LogOut, Bell, Menu, X, ClipboardList,
   BarChart3, Building2, BookOpen, RefreshCw,
   Timer, Megaphone, ScrollText, CreditCard,
-  Trees, FolderOpen, Building
+  Trees, FolderOpen, Building, Wallet, CalendarCheck
 } from 'lucide-react'
 
 export default function Layout() {
-  const { user, isManager, isHR, clearAuth } = useAuth()
+  const { user, isHR, isOperator, isApprover, isRota, isSharedAccount, clearAuth } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const refreshToken = useAuthStore(s => s.refreshToken)
+  const updateUser = useAuthStore(s => s.updateUser)
+
+  // The signed-in user is remembered in the browser from the last login.
+  // Refresh it once per visit so a change made by Admin (role, shared-login
+  // flag) shows up without the person having to sign out and in again.
+  useEffect(() => {
+    // Only apply the answer if the same person is still signed in when it arrives
+    // (on a shared PC someone else may have signed in meanwhile).
+    const askedWith = localStorage.getItem('bml_access')
+    const askedFor = user?.id
+    getMe().then(r => {
+      const fresh = r.data?.data
+      const current = useAuthStore.getState().user
+      if (fresh?.email && fresh.id === askedFor && current?.id === askedFor
+          && localStorage.getItem('bml_access') === askedWith) {
+        updateUser(fresh)
+      }
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768)
@@ -66,13 +85,40 @@ export default function Layout() {
     </p>
   )
 
-  const bottomNavItems = [
+  const alerts = { to: '/notifications', Icon: Bell, label: 'Alerts', badge: unreadCount }
+  type BottomItem = { to: string; Icon: any; label: string; badge?: number }
+  // Phone bottom bar: each role's own screens. Admin's is unchanged.
+  const bottomNavItems: BottomItem[] = isOperator ? [
+    { to: '/leave-balance', Icon: Wallet,        label: 'Balance' },
+    { to: '/my-leaves',     Icon: CalendarDays,  label: 'Applications' },
+    { to: '/apply-leave',   Icon: FileText,      label: 'Apply' },
+    alerts,
+  ] : isApprover ? [
+    { to: '/approvals',     Icon: ClipboardList, label: 'Approvals' },
+    { to: '/team-leave',    Icon: Users,         label: 'Employees' },
+    ...(isSharedAccount ? [] : [{ to: '/apply-leave', Icon: FileText, label: 'Apply' }]),
+    alerts,
+  ] : isRota ? [
+    { to: '/calendar',        Icon: CalendarDays,  label: 'Calendar' },
+    { to: '/approved-leaves', Icon: CalendarCheck, label: 'Approved' },
+    { to: '/my-leaves',       Icon: FileText,      label: 'My leave' },
+    alerts,
+  ] : [
     { to: '/dashboard',    Icon: LayoutDashboard, label: 'Home' },
     { to: '/my-leaves',    Icon: CalendarDays,    label: 'Leaves' },
     { to: '/apply-leave',  Icon: FileText,        label: 'Apply' },
     { to: '/clock',        Icon: Clock,           label: 'Clock' },
-    { to: '/notifications',Icon: Bell,            label: 'Alerts', badge: unreadCount },
+    alerts,
   ]
+
+  // The three personal screens every non-shared account gets
+  const myLeaveItems = (
+    <>
+      {navItem('/leave-balance', Wallet,       'Leave Balance')}
+      {navItem('/my-leaves',     CalendarDays, 'My Applications')}
+      {navItem('/apply-leave',   FileText,     'Apply Leave')}
+    </>
+  )
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden">
@@ -107,31 +153,86 @@ export default function Layout() {
         {/* Nav — scrollable */}
         <nav className="flex-1 p-2 overflow-y-auto space-y-0.5">
 
-          {/* MY SPACE */}
-          {sectionLabel('My Space')}
-          {navItem('/dashboard',    LayoutDashboard, 'Dashboard')}
-          {navItem('/my-leaves',    CalendarDays,    'My Leaves')}
-          {navItem('/apply-leave',  FileText,        'Apply for Leave')}
-          {navItem('/calendar',     CalendarDays,    'Team Calendar')}
-
-          {/* REPLACEMENTS */}
-          {sectionLabel('Replacements')}
-          {navItem('/replacements', RefreshCw,       'My Replacements')}
-
-          {/* MANAGEMENT — managers only */}
-          {isManager && (
+          {/* ── Operator / NMPT employee: three screens ── */}
+          {isOperator && (
             <>
+              {sectionLabel('My Leave')}
+              {myLeaveItems}
+              {/* Replacements stay as they were until the client decides (open point) */}
+              {sectionLabel('Replacements')}
+              {navItem('/replacements', RefreshCw, 'My Replacements')}
+            </>
+          )}
+
+          {/* ── Shift Supervisor / Shift Engineer / SIC ── */}
+          {isApprover && (
+            <>
+              {sectionLabel('Approvals')}
+              {navItem('/approvals',  ClipboardList, 'Pending Approvals')}
+              {navItem('/team-leave', Users,         'Employee Leave Dashboard')}
+              {/* A shared login belongs to no single person, so it has no personal leave screens */}
+              {!isSharedAccount && (
+                <>
+                  {sectionLabel('My Leave')}
+                  {myLeaveItems}
+                </>
+              )}
+              {/* Screens that existed before; kept so nothing the team uses disappears */}
+              {sectionLabel('More')}
+              {navItem('/dashboard',     LayoutDashboard, 'Dashboard')}
+              {navItem('/calendar',      CalendarDays,    'Team Calendar')}
+              {navItem('/team',          Users,           'My Team')}
+              {navItem('/team-balances', BarChart3,       'Team Balances')}
+              {navItem('/replacements',  RefreshCw,       'My Replacements')}
+              {navItem('/clock',         Clock,           'Clock In / Out')}
+            </>
+          )}
+
+          {/* ── NMPT Rota Manager: view only ── */}
+          {isRota && (
+            <>
+              {sectionLabel('Rota')}
+              {navItem('/calendar',        CalendarDays,  'Leave Calendar')}
+              {navItem('/approved-leaves', CalendarCheck, 'Approved Leaves')}
+              {sectionLabel('My Leave')}
+              {myLeaveItems}
+            </>
+          )}
+
+          {/* Any other role (none exists today): keep the personal leave screens rather than an empty menu */}
+          {!isOperator && !isApprover && !isRota && !isHR && (
+            <>
+              {sectionLabel('My Leave')}
+              {myLeaveItems}
+            </>
+          )}
+
+          {/* ── Admin: menu unchanged ── */}
+          {isHR && (
+            <>
+              {/* MY SPACE */}
+              {sectionLabel('My Space')}
+              {navItem('/dashboard',    LayoutDashboard, 'Dashboard')}
+              {navItem('/my-leaves',    CalendarDays,    'My Leaves')}
+              {navItem('/apply-leave',  FileText,        'Apply for Leave')}
+              {navItem('/calendar',     CalendarDays,    'Team Calendar')}
+
+              {/* REPLACEMENTS */}
+              {sectionLabel('Replacements')}
+              {navItem('/replacements', RefreshCw,       'My Replacements')}
+
+              {/* MANAGEMENT */}
               {sectionLabel('Manager')}
               {navItem('/approvals', ClipboardList, 'Pending Approvals')}
               {navItem('/team',      Users,         'My Team')}
               {navItem('/team-balances', BarChart3,     'Team Balances')}
+
+              {/* ATTENDANCE */}
+              {sectionLabel('Attendance')}
+              {navItem('/clock',        Clock,           'Clock In / Out')}
+              {/* HIDDEN: {navItem('/timesheets',   ClipboardList,   'Timesheets')} — backend GET /api/v1/attendance/ (list) not implemented yet */}
             </>
           )}
-
-          {/* ATTENDANCE */}
-          {sectionLabel('Attendance')}
-          {navItem('/clock',        Clock,           'Clock In / Out')}
-          {/* HIDDEN: {navItem('/timesheets',   ClipboardList,   'Timesheets')} — backend GET /api/v1/attendance/ (list) not implemented yet */}
 
           {/* HR ADMIN */}
           {isHR && (
@@ -162,7 +263,7 @@ export default function Layout() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-slate-900 truncate">{user?.full_name}</p>
-              <p className="text-xs text-slate-500 capitalize">{user?.role === 'hr_admin' ? 'Admin' : ((user as any)?.designation_name || user?.role?.replace('_', ' '))}</p>
+              <p className="text-xs text-slate-500 capitalize">{user?.role === 'hr_admin' ? 'Admin' : ((user as any)?.designation_name || user?.role?.replace('_', ' '))}{isSharedAccount ? ' · shared login' : ''}</p>
             </div>
             <div className="flex gap-1">
               <button
@@ -212,7 +313,7 @@ export default function Layout() {
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium text-slate-900 leading-none">{user?.full_name}</p>
-                <p className="text-xs text-slate-500 mt-0.5 capitalize">{user?.role === 'hr_admin' ? 'Admin' : ((user as any)?.designation_name || user?.role?.replace('_', ' '))}</p>
+                <p className="text-xs text-slate-500 mt-0.5 capitalize">{user?.role === 'hr_admin' ? 'Admin' : ((user as any)?.designation_name || user?.role?.replace('_', ' '))}{isSharedAccount ? ' · shared login' : ''}</p>
               </div>
               <button onClick={() => navigate('/settings')} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600" title="Settings">
                 <Settings size={17} />

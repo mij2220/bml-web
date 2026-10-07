@@ -11,6 +11,7 @@ const roleColor: Record<string, string> = {
   manager: 'bg-purple-50 text-purple-700',
   hr_admin: 'bg-emerald-50 text-emerald-700',
   super_admin: 'bg-red-50 text-red-700',
+  rota_manager: 'bg-amber-50 text-amber-800',
 }
 
 const statusColor: Record<string, string> = {

@@ -72,6 +72,7 @@ interface EditForm {
   branch_id: string;
   reporting_manager_id: string;
   role: string;
+  is_shared_account: string;
 }
 
 function unwrap(res: { data: unknown }): unknown {
@@ -99,6 +100,7 @@ const EMPTY_EDIT: EditForm = {
   date_of_birth: "", employment_type: "", salary_grade: "",
   account_code: "", joining_date: "", department_id: "",
   designation_id: "", branch_id: "", reporting_manager_id: "", role: "",
+  is_shared_account: "false",
 };
 
 export default function EmployeeProfilePage() {
@@ -210,6 +212,7 @@ export default function EmployeeProfilePage() {
       shift_incharge_id: (employee as any).shift_incharge?.id || "",
       experience_start_date: employee.experience_start_date || "",
       role: employee.role || "",
+      is_shared_account: (employee as any).is_shared_account ? "true" : "false",
     });
     setEditModal(true);
   };
@@ -575,10 +578,19 @@ export default function EmployeeProfilePage() {
                     <select value={editForm.role} onChange={set("role")} className={inputCls}>
                       <option value="">Select role</option>
                       <option value="employee">Employee</option>
-                      <option value="manager">Manager</option>
+                      <option value="manager">Manager (Supervisor / SIC)</option>
+                      <option value="rota_manager">Rota Manager (view only)</option>
                       <option value="hr_admin">Admin</option>
                       <option value="super_admin">Super Admin</option>
                     </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Login used by</label>
+                    <select value={editForm.is_shared_account} onChange={set("is_shared_account")} className={inputCls}>
+                      <option value="false">One person</option>
+                      <option value="true">Several people (shared login)</option>
+                    </select>
+                    <p className="text-[11px] text-gray-400 mt-1">Shared login: each approval asks for the person's own name and P.No.</p>
                   </div>
                   <div>
                     <label className={labelCls}>L1 Supervisor</label>

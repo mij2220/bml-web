@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import api from "../../api/client";
 
 interface LeaveType {
@@ -27,8 +27,22 @@ function unwrapList(res: { data: unknown }): unknown[] {
   return [];
 }
 
+type EditTarget = {
+  id: string; reference_number: string; status: string;
+  returned_remark?: string; returned_by?: string;
+  permissions?: { can_edit: boolean };
+};
+
 export default function ApplyLeavePage() {
   const navigate = useNavigate();
+  // /apply-leave?edit=<id> opens an existing application for editing.
+  // Saving a returned application also resubmits it to the Shift Supervisor.
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("edit");
+  const [editTarget, setEditTarget] = useState<EditTarget | null>(null);
+  const [editLoading, setEditLoading] = useState(!!editId);
+  const [editError, setEditError] = useState("");
+  const isResubmit = editTarget?.status === "returned";
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
   const [selectedTypeId, setSelectedTypeId] = useState("");
@@ -64,11 +78,46 @@ export default function ApplyLeavePage() {
       setBalances(unwrapList(res) as LeaveBalance[]);
     }).catch(() => {});
 
-    api.get("/employees/me/").then(res => {
-      const emp = ((res.data as Record<string,unknown>)?.data ?? res.data) as Record<string,unknown>;
-      if (emp?.phone) setContact(String(emp.phone));
-    }).catch(() => {});
+    if (!editId) {
+      api.get("/employees/me/").then(res => {
+        const emp = ((res.data as Record<string,unknown>)?.data ?? res.data) as Record<string,unknown>;
+        if (emp?.phone) setContact(String(emp.phone));
+      }).catch(() => {});
+    }
   }, []);
+
+  useEffect(() => {
+    const el = document.getElementById("page-title");
+    if (el) el.textContent = editId ? "Edit Application" : "Apply for Leave";
+  }, [editId]);
+
+  // Edit mode: load the application and fill the form with it
+  useEffect(() => {
+    if (!editId) return;
+    setEditLoading(true);
+    api.get(`/leaves/${editId}/`).then(res => {
+      const d = ((res.data as Record<string,unknown>)?.data ?? res.data) as Record<string, any>;
+      setEditTarget({
+        id: d.id, reference_number: d.reference_number, status: d.status,
+        returned_remark: d.returned_remark, returned_by: d.returned_by, permissions: d.permissions,
+      });
+      setSelectedTypeId(String(d.leave_type ?? ""));
+      setStartDate(d.start_date ?? "");
+      setEndDate(d.end_date ?? "");
+      setReason(d.reason ?? "");
+      setIsHalfDay(!!d.is_half_day);
+      setHalfDayPeriod(d.half_day_period === "afternoon" ? "PM" : "AM");
+      setContact(d.contact_during_leave ?? "");
+      setAddress(d.address_during_leave ?? "");
+      setDutyDate(d.duty_date_for_cd ?? "");
+      calcDays(d.start_date ?? "", d.end_date ?? "");
+    }).catch((err: unknown) => {
+      const status = (err as {response?: {status?: number}})?.response?.status;
+      setEditError(status === 403 || status === 404
+        ? "This application could not be opened."
+        : "Could not load the application. Please try again.");
+    }).finally(() => setEditLoading(false));
+  }, [editId]);
 
   const calcDays = (s: string, e: string) => {
     if (!s || !e) return;
@@ -131,7 +180,9 @@ export default function ApplyLeavePage() {
       if (dutyDate) payload.duty_date_for_cd = dutyDate;
       if (sickSubtype) payload.sick_subtype = sickSubtype;
 
-      const res = await api.post("/leaves/", payload);
+      const res = editId
+        ? await api.patch(`/leaves/${editId}/`, payload)
+        : await api.post("/leaves/", payload);
       const created = ((res.data as Record<string,unknown>)?.data ?? res.data) as Record<string,unknown>;
 
       if (attachment && created?.id) {
@@ -144,7 +195,13 @@ export default function ApplyLeavePage() {
       setSubmitted(true);
     } catch (err: unknown) {
       const data = (err as {response?: {data?: Record<string,unknown>}})?.response?.data;
-      const msg = data?.message as string || data?.errors as string || "Failed to submit. Please try again.";
+      // The server's message says what is wrong; a bare "Validation failed." does not, so show the field errors then
+      const serverMsg = data?.message as string;
+      const fieldErrors = data?.errors && typeof data.errors === "object"
+        ? Object.values(data.errors as Record<string, unknown>).flat().map(String).join(" ")
+        : "";
+      const msg = (serverMsg && serverMsg !== "Validation failed." ? serverMsg : fieldErrors || serverMsg)
+        || "Failed to submit. Please try again.";
       setErrors({ general: typeof msg === "string" ? msg : JSON.stringify(msg) });
     } finally {
       setSubmitting(false);
@@ -160,22 +217,64 @@ export default function ApplyLeavePage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold text-gray-900 mb-2">Leave application submitted</h2>
-      <p className="text-gray-500 text-sm mb-6">Sent for approval. You will be notified once reviewed.</p>
+      <h2 className="text-xl font-semibold text-gray-900 mb-2">
+        {isResubmit ? "Leave application resubmitted" : editId ? "Leave application updated" : "Leave application submitted"}
+      </h2>
+      <p className="text-gray-500 text-sm mb-6">
+        {editId && !isResubmit
+          ? "Your approver will see the updated details."
+          : "Sent for approval. You will be notified at each step."}
+      </p>
       <div className="flex gap-3 justify-center">
-        <button onClick={() => navigate("/my-leaves")} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">View my leaves</button>
-        <button onClick={() => { setSelectedTypeId(""); setStartDate(""); setEndDate(""); setReason(""); setIsHalfDay(false); setSickSubtype(""); setContact(""); setAddress(""); setDutyDate(""); setAttachment(null); setWorkingDays(null); setErrors({}); setSubmitted(false); }}
+        <button onClick={() => navigate("/my-leaves")} className="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">View my applications</button>
+        <button onClick={() => { if (editId) { navigate("/apply-leave", { replace: true }); setEditTarget(null); } setSelectedTypeId(""); setStartDate(""); setEndDate(""); setReason(""); setIsHalfDay(false); setSickSubtype(""); setContact(""); setAddress(""); setDutyDate(""); setAttachment(null); setWorkingDays(null); setErrors({}); setSubmitted(false); }}
           className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50">Apply another</button>
       </div>
+    </div>
+  );
+
+  if (editId && editLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+
+  if (editId && (editError || (editTarget && editTarget.permissions && !editTarget.permissions.can_edit))) return (
+    <div className="max-w-lg mx-auto text-center py-16 px-4">
+      <h2 className="text-lg font-semibold text-gray-900 mb-2">
+        {editError || "This application can no longer be changed"}
+      </h2>
+      {!editError && (
+        <p className="text-gray-500 text-sm mb-6">
+          An application can be edited only before anyone has reviewed it, or after it has been
+          returned to you. If the details are wrong, cancel it and apply again.
+        </p>
+      )}
+      <button onClick={() => navigate("/my-leaves")} className="mt-4 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700">Back to my applications</button>
     </div>
   );
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-gray-900">Apply for leave</h1>
-        <p className="text-sm text-gray-500 mt-1">Complete the form below and submit for approval.</p>
+        <h1 className="text-xl font-semibold text-gray-900">
+          {isResubmit ? "Correct and resubmit" : editId ? "Edit leave application" : "Apply for leave"}
+        </h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {editTarget
+            ? `${editTarget.reference_number} · ${isResubmit ? "make the correction, then resubmit. Approval starts again from the first step." : "you can change it until it has been reviewed."}`
+            : "Complete the form below and submit for approval."}
+        </p>
       </div>
+
+      {isResubmit && editTarget?.returned_remark && (
+        <div className="mb-4 bg-violet-50 border border-violet-200 rounded-xl p-4">
+          <p className="text-sm font-semibold text-violet-900">
+            Returned{editTarget.returned_by ? ` by ${editTarget.returned_by}` : ""} with these remarks
+          </p>
+          <p className="text-sm text-violet-900 mt-1 leading-relaxed">“{editTarget.returned_remark}”</p>
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-50">
 
@@ -372,7 +471,9 @@ export default function ApplyLeavePage() {
           <button type="button" onClick={() => navigate(-1)} className="px-5 py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
           <button type="button" onClick={handleSubmit} disabled={submitting}
             className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 transition-colors">
-            {submitting ? "Submitting..." : "Submit leave application"}
+            {submitting
+              ? (editId ? "Saving..." : "Submitting...")
+              : isResubmit ? "Save and resubmit" : editId ? "Save changes" : "Submit leave application"}
           </button>
         </div>
       </div>
