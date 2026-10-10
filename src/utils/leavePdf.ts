@@ -102,7 +102,7 @@ export function generateLeavePdf(leave: LeaveForPdf): void {
   <div class="ref">Ref: ${leave.reference_number} &nbsp;|&nbsp; Generated: ${formatDate(new Date().toISOString())}</div>
 
   <div class="header">
-    <h1>BookMyLeave</h1>
+    <h1>ShiftLedger</h1>
     <h2>Application for Leave</h2>
   </div>
 

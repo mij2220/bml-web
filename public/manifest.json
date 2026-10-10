@@ -1,6 +1,6 @@
 {
-  "name": "BookMyLeave",
-  "short_name": "BML",
+  "name": "ShiftLedger",
+  "short_name": "ShiftLedger",
   "description": "Leave Management System",
   "start_url": "/",
   "display": "standalone",

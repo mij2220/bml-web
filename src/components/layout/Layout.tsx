@@ -141,7 +141,7 @@ export default function Layout() {
             <BookOpen size={14} className="text-white" />
           </div>
           <span className="font-bold text-slate-900">
-            Book<span className="text-emerald-500">My</span>Leave
+            Shift<span className="text-emerald-500">Ledger</span>
           </span>
           {isMobile && (
             <button onClick={() => setSidebarOpen(false)} className="ml-auto p-1">

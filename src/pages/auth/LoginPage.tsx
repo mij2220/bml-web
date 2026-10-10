@@ -56,7 +56,7 @@ export default function LoginPage() {
             <BookOpen size={28} className="text-white" />
           </div>
           <h1 className="text-2xl font-bold text-white">
-            Book<span className="text-emerald-400">My</span>Leave
+            Shift<span className="text-emerald-400">Ledger</span>
           </h1>
           <p className="text-slate-400 text-sm mt-0.5">Leave Management System</p>
         </div>
@@ -162,7 +162,7 @@ export default function LoginPage() {
       </div>
 
       <p className="text-center text-xs text-slate-500 pb-4">
-        BookMyLeave © 2026 — Demo mode
+        ShiftLedger © 2026 — Demo mode
       </p>
     </div>
   )
