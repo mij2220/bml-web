@@ -4,12 +4,15 @@ import { useAuth } from '../../hooks/useAuth'
 import { useAuthStore } from '../../store/authStore'
 import { logout, getMe } from '../../api/auth'
 import { getNotificationCount } from '../../api/notifications'
+import { useModules, moduleOfPath, MODULE_LABEL, MODULE_HOME } from '../../hooks/useModules'
+import { homePathFor } from '../../hooks/useAuth'
 import {
-  LayoutDashboard, CalendarDays, Clock, FileText, Users,
+  LayoutDashboard, CalendarDays, FileText, Users,
   Settings, LogOut, Bell, Menu, X, ClipboardList,
   BarChart3, Building2, BookOpen, RefreshCw,
   Timer, Megaphone, ScrollText, CreditCard,
-  Trees, FolderOpen, Building, Wallet, CalendarCheck
+  Trees, FolderOpen, Building, Wallet, CalendarCheck,
+  ClipboardCheck, CalendarRange, FileWarning, Sheet, UserCheck, Hourglass, ShieldCheck, Sliders, Flag, Layers
 } from 'lucide-react'
 
 export default function Layout() {
@@ -21,6 +24,15 @@ export default function Layout() {
   const [unreadCount, setUnreadCount] = useState(0)
   const refreshToken = useAuthStore(s => s.refreshToken)
   const updateUser = useAuthStore(s => s.updateUser)
+  const { modules, get: getModule, hasRole } = useModules()
+  const mod = moduleOfPath(location.pathname)
+  const att = getModule('attendance')
+  const ot = getModule('overtime')
+  const attTeam = !!att && att.level !== 'own'
+  const attWorker = hasRole('attendance', ['marker', 'reviewer', 'manager'])
+  const attMonthly = hasRole('attendance', ['reviewer', 'manager', 'accounts'])
+  const otTeam = !!ot && ot.level !== 'own'
+  const goModule = (k: string) => navigate(k === 'leave' ? homePathFor(user?.role) : MODULE_HOME[k as 'attendance'])
 
   // The signed-in user is remembered in the browser from the last login.
   // Refresh it once per visit so a change made by Admin (role, shared-login
@@ -85,6 +97,18 @@ export default function Layout() {
     </p>
   )
 
+  // Module tabs: only the modules this person has (none shown when there is just one)
+  const ModuleTabs = () => (
+    <div className="flex gap-1.5" role="tablist" aria-label="Modules">
+      {modules.map(m => (
+        <button key={m.key} role="tab" aria-selected={mod === m.key} onClick={() => goModule(m.key)}
+          className={`text-sm font-semibold rounded-full px-3 py-1.5 border whitespace-nowrap transition-colors ${mod === m.key ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-white border-slate-200 text-slate-700 hover:border-emerald-400'}`}>
+          {MODULE_LABEL[m.key]}
+        </button>
+      ))}
+    </div>
+  )
+
   const alerts = { to: '/notifications', Icon: Bell, label: 'Alerts', badge: unreadCount }
   type BottomItem = { to: string; Icon: any; label: string; badge?: number }
   // Phone bottom bar: each role's own screens. Admin's is unchanged.
@@ -107,9 +131,25 @@ export default function Layout() {
     { to: '/dashboard',    Icon: LayoutDashboard, label: 'Home' },
     { to: '/my-leaves',    Icon: CalendarDays,    label: 'Leaves' },
     { to: '/apply-leave',  Icon: FileText,        label: 'Apply' },
-    { to: '/clock',        Icon: Clock,           label: 'Clock' },
+    { to: '/calendar',     Icon: CalendarDays,    label: 'Calendar' },
     alerts,
   ]
+
+  const moduleBottom: BottomItem[] | null = mod === 'attendance' ? [
+    ...(att?.member ? [{ to: '/attendance/my', Icon: UserCheck, label: 'Mine' }] : []),
+    ...(attTeam ? [{ to: '/attendance/sheet', Icon: ClipboardCheck, label: 'Sheet' }, { to: '/attendance/days', Icon: CalendarRange, label: 'Days' }] : []),
+    alerts,
+  ] : mod === 'overtime' ? [
+    ...(ot?.member ? [{ to: '/overtime/my', Icon: Hourglass, label: 'Mine' }] : []),
+    ...(otTeam ? [{ to: '/overtime/statement', Icon: Sheet, label: 'Statement' }] : []),
+    alerts,
+  ] : mod === 'admin' ? [
+    { to: '/employees', Icon: Users, label: 'Employees' },
+    { to: '/admin/sections', Icon: Layers, label: 'Sections' },
+    { to: '/admin/access', Icon: ShieldCheck, label: 'Access' },
+    alerts,
+  ] : null
+  const bottomItems = moduleBottom ?? bottomNavItems
 
   // The three personal screens every non-shared account gets
   const myLeaveItems = (
@@ -152,6 +192,7 @@ export default function Layout() {
 
         {/* Nav — scrollable */}
         <nav className="flex-1 p-2 overflow-y-auto space-y-0.5">
+          {mod === 'leave' && (<>
 
           {/* ── Operator / NMPT employee: three screens ── */}
           {isOperator && (
@@ -184,7 +225,6 @@ export default function Layout() {
               {navItem('/team',          Users,           'My Team')}
               {navItem('/team-balances', BarChart3,       'Team Balances')}
               {navItem('/replacements',  RefreshCw,       'My Replacements')}
-              {navItem('/clock',         Clock,           'Clock In / Out')}
             </>
           )}
 
@@ -227,30 +267,54 @@ export default function Layout() {
               {navItem('/team',      Users,         'My Team')}
               {navItem('/team-balances', BarChart3,     'Team Balances')}
 
-              {/* ATTENDANCE */}
-              {sectionLabel('Attendance')}
-              {navItem('/clock',        Clock,           'Clock In / Out')}
-              {/* HIDDEN: {navItem('/timesheets',   ClipboardList,   'Timesheets')} — backend GET /api/v1/attendance/ (list) not implemented yet */}
             </>
           )}
 
-          {/* HR ADMIN */}
-          {isHR && (
+          </>)}
+
+          {/* ── Attendance module ── */}
+          {mod === 'attendance' && (
             <>
-              {sectionLabel('Admin')}
+              {att?.member && (<>{sectionLabel('My attendance')}{navItem('/attendance/my', UserCheck, 'My attendance')}</>)}
+              {attTeam && (
+                <>
+                  {sectionLabel('Shift attendance')}
+                  {navItem('/attendance/sheet', ClipboardCheck, 'Daily sheet')}
+                  {navItem('/attendance/days', CalendarRange, 'Days')}
+                  {navItem('/attendance/roster', CalendarDays, 'Roster')}
+                  {attWorker && navItem('/attendance/corrections', FileWarning, 'Corrections')}
+                  {attMonthly && navItem('/attendance/monthly', BarChart3, 'Monthly hours')}
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── Overtime module ── */}
+          {mod === 'overtime' && (
+            <>
+              {ot?.member && (<>{sectionLabel('My overtime')}{navItem('/overtime/my', Hourglass, 'My overtime')}</>)}
+              {otTeam && (<>{sectionLabel('Overtime')}{navItem('/overtime/statement', Sheet, 'Overtime statement')}</>)}
+            </>
+          )}
+
+          {/* ── Admin: settings shared by all modules ── */}
+          {mod === 'admin' && isHR && (
+            <>
+              {sectionLabel('Organisation')}
               {navItem('/employees',         Users,       'Employees')}
               {navItem('/org-chart',         Trees,       'Org Chart')}
               {navItem('/departments',       Building2,   'Units')}
+              {navItem('/admin/access',      ShieldCheck, 'Roles and access')}
+              {navItem('/admin/holidays',    Flag,        'Gazetted holidays')}
+              {sectionLabel('Leave')}
               {navItem('/leave-types',       Settings,    'Leave Types')}
-              {/* HIDDEN: {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')} — backend /api/v1/holidays/ not implemented yet */}
-              {/* HIDDEN: {navItem('/shifts',            Timer,       'Shifts')} */}
-              {/* HIDDEN: {navItem('/branches',          Building,    'Branches')} */}
-              {navItem('/quota-management',   Building,    'Quota Management')}
-              {/* HIDDEN: {navItem('/projects',          FolderOpen,  'Projects')} */}
-              {/* HIDDEN: {navItem('/announcements',     Megaphone,   'Announcements')} — backend /api/v1/announcements/ not implemented yet */}
+              {navItem('/quota-management',  Building,    'Quota Management')}
               {navItem('/reports',           BarChart3,   'Reports')}
+              {sectionLabel('Attendance and overtime')}
+              {navItem('/admin/sections',    Layers,      'Shift sections')}
+              {navItem('/admin/module-settings', Sliders, 'Overtime rules')}
+              {sectionLabel('Records')}
               {navItem('/audit-log',         ScrollText,  'Audit Log')}
-              {/* HIDDEN: {navItem('/billing',           CreditCard,  'Billing')} */}
             </>
           )}
         </nav>
@@ -294,6 +358,7 @@ export default function Layout() {
               <Menu size={20} />
             </button>
           )}
+          {!isMobile && modules.length > 1 && <ModuleTabs />}
           <h1 className="flex-1 text-base font-semibold text-slate-900 truncate" id="page-title">Dashboard</h1>
           <button
             onClick={() => navigate('/notifications')}
@@ -325,6 +390,10 @@ export default function Layout() {
           )}
         </header>
 
+        {isMobile && modules.length > 1 && (
+          <div className="bg-white border-b border-slate-200 px-2 py-1.5 overflow-x-auto flex-shrink-0"><ModuleTabs /></div>
+        )}
+
         {/* Page */}
         <main className={`flex-1 overflow-auto p-4 md:p-6 ${isMobile ? 'pb-20' : ''}`}>
           <Outlet />
@@ -334,7 +403,7 @@ export default function Layout() {
         {isMobile && (
           <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex items-center z-30"
                style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
-            {bottomNavItems.map(({ to, Icon, label, badge }) => (
+            {bottomItems.map(({ to, Icon, label, badge }) => (
               <NavLink key={to} to={to}
                 className={({ isActive }) =>
                   `flex-1 flex flex-col items-center py-2 gap-0.5 text-xs font-medium transition-colors ${isActive ? 'text-emerald-500' : 'text-slate-400'}`
@@ -344,7 +413,7 @@ export default function Layout() {
                   <>
                     <div className="relative">
                       <Icon size={19} className={isActive ? 'text-emerald-500' : 'text-slate-400'} />
-                      {badge && badge > 0 && (
+                      {!!badge && badge > 0 && (
                         <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                           {badge > 9 ? '9+' : badge}
                         </span>

@@ -33,6 +33,20 @@ import QuotaManagementPage from './pages/admin/QuotaManagementPage'
 import TeamBalancePage from './pages/admin/TeamBalancePage'
 import BillingPage from './pages/admin/BillingPage'
 import AttendanceCorrectionPage from './pages/attendance/AttendanceCorrectionPage'
+import DailySheetPage from './pages/attendance/DailySheetPage'
+import SheetsPage from './pages/attendance/SheetsPage'
+import RosterPage from './pages/attendance/RosterPage'
+import CorrectionsPage from './pages/attendance/CorrectionsPage'
+import MyAttendancePage from './pages/attendance/MyAttendancePage'
+import PrintSheetPage from './pages/attendance/PrintSheetPage'
+import StatementPage from './pages/overtime/StatementPage'
+import MyOvertimePage from './pages/overtime/MyOvertimePage'
+import ShiftSectionsPage from './pages/admin/ShiftSectionsPage'
+import SectionSetupPage from './pages/admin/SectionSetupPage'
+import AccessPage from './pages/admin/AccessPage'
+import GazettedHolidaysPage from './pages/admin/GazettedHolidaysPage'
+import ModuleSettingsPage from './pages/admin/ModuleSettingsPage'
+import { useModules, moduleOfPath } from './hooks/useModules'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore(s => s.isAuthenticated)
@@ -68,10 +82,32 @@ function ApplyLeaveRoute() {
   return <ApplyLeavePage key={params.get('edit') ?? 'new'} />
 }
 
+/** /attendance and /overtime open the person's first screen in that module. */
+function ModuleHome({ module }: { module: 'attendance' | 'overtime' }) {
+  const { get } = useModules()
+  const m = get(module)
+  const team = !!m && m.level !== 'own'
+  if (module === 'attendance') return <Navigate to={team ? '/attendance/sheet' : '/attendance/my'} replace />
+  return <Navigate to={team ? '/overtime/statement' : '/overtime/my'} replace />
+}
+
 function RoleGate({ children }: { children: React.ReactNode }) {
   const user = useAuthStore(s => s.user)
   const { pathname } = useLocation()
+  const { has, get } = useModules()
   if (pathname === '/') return <>{children}</>
+  // Attendance, Overtime and Admin tabs: only for people who have that module.
+  // (The server refuses the data as well; this only keeps the web app tidy.)
+  const mod = moduleOfPath(pathname)
+  if (mod !== 'leave') {
+    if (!has(mod)) return <Navigate to={homePathFor(user?.role)} replace />
+    // Team screens need a role in the module; members alone get their own screens
+    const p = pathname.toLowerCase()
+    const own = get(mod)?.level === 'own'
+    if (own && mod === 'attendance' && !p.startsWith('/attendance/my') && p !== '/attendance') return <Navigate to="/attendance/my" replace />
+    if (own && mod === 'overtime' && !p.startsWith('/overtime/my') && p !== '/overtime') return <Navigate to="/overtime/my" replace />
+    return <>{children}</>
+  }
   const allowed = user?.role === 'employee' ? OPERATOR_PATHS
     : user?.role === 'rota_manager' ? ROTA_PATHS
     : null
@@ -118,6 +154,23 @@ export default function App() {
         <Route path="announcements"    element={<AnnouncementsPage />} />
         <Route path="audit-log"        element={<AuditLogPage />} />
         <Route path="billing"          element={<BillingPage />} />
+        <Route path="attendance"             element={<ModuleHome module="attendance" />} />
+        <Route path="attendance/my"          element={<MyAttendancePage />} />
+        <Route path="attendance/sheet"       element={<DailySheetPage />} />
+        <Route path="attendance/days"        element={<SheetsPage />} />
+        <Route path="attendance/roster"      element={<RosterPage />} />
+        <Route path="attendance/corrections" element={<CorrectionsPage />} />
+        <Route path="attendance/monthly"     element={<StatementPage mode="attendance" key="att" />} />
+        <Route path="attendance/print"       element={<PrintSheetPage />} />
+        <Route path="overtime"               element={<ModuleHome module="overtime" />} />
+        <Route path="overtime/my"            element={<MyOvertimePage />} />
+        <Route path="overtime/statement"     element={<StatementPage mode="overtime" key="ot" />} />
+        <Route path="admin"                  element={<Navigate to="/employees" replace />} />
+        <Route path="admin/sections"         element={<ShiftSectionsPage />} />
+        <Route path="admin/sections/:id"     element={<SectionSetupPage />} />
+        <Route path="admin/access"           element={<AccessPage />} />
+        <Route path="admin/holidays"         element={<GazettedHolidaysPage />} />
+        <Route path="admin/module-settings"  element={<ModuleSettingsPage />} />
         <Route path="*"                element={<Home />} />
       </Route>
     </Routes>

@@ -11,6 +11,16 @@ export interface User {
   /** A login used by several people (e.g. the Shift Engineers' common ID).
    *  Approvals made from it must be signed with the person's own name and P.No. */
   is_shared_account?: boolean
+  /** Module tabs this person may open (ShiftLedger). Sent by the server. */
+  modules?: ModuleAccess[]
+}
+
+export type ModuleKey = 'leave' | 'attendance' | 'overtime' | 'admin'
+export interface ModuleAccess {
+  key: ModuleKey
+  level: 'own' | 'team' | 'all'
+  roles: { role: string; section_id: string | null; section_name: string }[]
+  member?: boolean
 }
 
 export interface Employee {
