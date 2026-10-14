@@ -98,6 +98,12 @@ function LeaveDetailModal({ id, onClose, onEdit, onCancel }: {
             </div>
 
             <div className="p-5 space-y-4">
+              {leave.status === 'cancelled' && leave.cancel_reason && (
+                <div className="bg-red-50 border border-red-200 rounded-xl p-3">
+                  <p className="text-sm font-semibold text-red-800">Cancelled{leave.cancelled_by_name ? ` by ${leave.cancelled_by_name}` : ''}</p>
+                  <p className="text-sm text-red-900 mt-1.5 leading-relaxed">“{leave.cancel_reason}”</p>
+                </div>
+              )}
               {leave.status === 'returned' && (
                 <div className="bg-violet-50 border border-violet-200 rounded-xl p-3">
                   <p className="text-sm font-semibold text-violet-900 flex items-center gap-1.5">
@@ -257,6 +263,11 @@ function LeaveCard({
         <span>{l.start_date} → {l.end_date}</span>
         <span className="font-bold text-slate-900">{l.total_days}d</span>
       </div>
+      {l.status === 'cancelled' && l.cancel_reason && (
+        <p className="text-xs text-red-900 bg-red-50 border border-red-200 rounded-lg px-2.5 py-2 mb-3">
+          Cancelled{l.cancelled_by_name ? ` by ${l.cancelled_by_name}` : ''}: {l.cancel_reason}
+        </p>
+      )}
       {l.status === 'returned' && l.returned_remark && (
         <p className="text-xs text-violet-900 bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-2 mb-3">
           Remarks: {l.returned_remark}

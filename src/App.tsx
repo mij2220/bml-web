@@ -63,10 +63,11 @@ function Home() {
 // their own screens; typing another address brings them back to their first
 // screen. Supervisor / SIC and Admin keep access to everything they had.
 // This only tidies the web app — the server enforces the real permissions.
-const OPERATOR_PATHS = ['/leave-balance', '/my-leaves', '/apply-leave', '/replacements', '/notifications', '/settings']
+const OPERATOR_PATHS = ['/leave-balance', '/my-leaves', '/apply-leave', '/notifications', '/settings']
 const ROTA_PATHS = ['/calendar', '/approved-leaves', '/leave-balance', '/my-leaves', '/apply-leave', '/replacements', '/notifications', '/settings']
-// A shared login belongs to no single person, so it cannot apply for leave
-const SHARED_LOGIN_BLOCKED = ['/leave-balance', '/my-leaves', '/apply-leave']
+// Supervisors and SICs (and shared logins) only manage their teams' approvals
+// (Engro, 13 Oct 2026): no personal leave screens, dashboard, replacements or clock
+const APPROVER_BLOCKED = ['/leave-balance', '/my-leaves', '/apply-leave', '/dashboard', '/replacements', '/clock']
 
 // The router matches addresses without regard to capital letters, so this must too
 const under = (pathname: string, paths: string[]) => {
@@ -112,7 +113,7 @@ function RoleGate({ children }: { children: React.ReactNode }) {
     : user?.role === 'rota_manager' ? ROTA_PATHS
     : null
   if (allowed && !under(pathname, allowed)) return <Navigate to={homePathFor(user?.role)} replace />
-  if (user?.is_shared_account && user.role === 'manager' && under(pathname, SHARED_LOGIN_BLOCKED)) {
+  if (user?.role === 'manager' && under(pathname, APPROVER_BLOCKED)) {
     return <Navigate to={homePathFor(user.role)} replace />
   }
   return <>{children}</>
