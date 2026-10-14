@@ -26,7 +26,8 @@ export function useAuth() {
 /** Where each role lands after signing in. */
 export function homePathFor(role?: string | null): string {
   if (role === 'employee') return '/leave-balance'
-  if (role === 'manager') return '/approvals'
+  // Supervisors, SICs and Admin only manage approvals in Leave (Engro, 13-14 Oct 2026)
+  if (role === 'manager' || role === 'hr_admin' || role === 'super_admin') return '/approvals'
   if (role === 'rota_manager') return '/calendar'
   return '/dashboard'
 }

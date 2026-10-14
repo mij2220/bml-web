@@ -87,13 +87,13 @@ export default function Layout() {
 
   const alerts = { to: '/notifications', Icon: Bell, label: 'Alerts', badge: unreadCount }
   type BottomItem = { to: string; Icon: any; label: string; badge?: number }
-  // Phone bottom bar: each role's own screens. Admin's is unchanged.
+  // Phone bottom bar: each role's own screens. Admin gets the approver's bar (Engro, 14 Oct 2026).
   const bottomNavItems: BottomItem[] = isOperator ? [
     { to: '/leave-balance', Icon: Wallet,        label: 'Balance' },
     { to: '/my-leaves',     Icon: CalendarDays,  label: 'Applications' },
     { to: '/apply-leave',   Icon: FileText,      label: 'Apply' },
     alerts,
-  ] : isApprover ? [
+  ] : (isApprover || isHR) ? [
     { to: '/approvals',     Icon: ClipboardList, label: 'Approvals' },
     { to: '/team-leave',    Icon: Users,         label: 'Employees' },
     { to: '/calendar',      Icon: CalendarDays,  label: 'Calendar' },
@@ -196,30 +196,17 @@ export default function Layout() {
             </>
           )}
 
-          {/* ── Admin: menu unchanged ── */}
+          {/* ── Admin: does not use Leave for himself (Engro, 14 Oct 2026) —
+                no Dashboard, My Leaves, Apply, My Replacements or Clock In/Out ── */}
           {isHR && (
             <>
-              {/* MY SPACE */}
-              {sectionLabel('My Space')}
-              {navItem('/dashboard',    LayoutDashboard, 'Dashboard')}
-              {navItem('/my-leaves',    CalendarDays,    'My Leaves')}
-              {navItem('/apply-leave',  FileText,        'Apply for Leave')}
-              {navItem('/calendar',     CalendarDays,    'Team Calendar')}
-
-              {/* REPLACEMENTS */}
-              {sectionLabel('Replacements')}
-              {navItem('/replacements', RefreshCw,       'My Replacements')}
-
-              {/* MANAGEMENT */}
-              {sectionLabel('Manager')}
-              {navItem('/approvals', ClipboardList, 'Pending Approvals')}
-              {navItem('/team',      Users,         'My Team')}
+              {sectionLabel('Approvals')}
+              {navItem('/approvals',     ClipboardList, 'Pending Approvals')}
+              {navItem('/team-leave',    Users,         'Employee Leave Dashboard')}
+              {sectionLabel('More')}
+              {navItem('/calendar',      CalendarDays,  'Team Calendar')}
+              {navItem('/team',          Users,         'My Team')}
               {navItem('/team-balances', BarChart3,     'Team Balances')}
-
-              {/* ATTENDANCE */}
-              {sectionLabel('Attendance')}
-              {navItem('/clock',        Clock,           'Clock In / Out')}
-              {/* HIDDEN: {navItem('/timesheets',   ClipboardList,   'Timesheets')} — backend GET /api/v1/attendance/ (list) not implemented yet */}
             </>
           )}
 

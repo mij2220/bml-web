@@ -52,7 +52,9 @@ function Home() {
 const OPERATOR_PATHS = ['/leave-balance', '/my-leaves', '/apply-leave', '/notifications', '/settings']
 const ROTA_PATHS = ['/calendar', '/approved-leaves', '/leave-balance', '/my-leaves', '/apply-leave', '/replacements', '/notifications', '/settings']
 // Supervisors and SICs (and shared logins) only manage their teams' approvals
-// (Engro, 13 Oct 2026): no personal leave screens, dashboard, replacements or clock
+// (Engro, 13 Oct 2026): no personal leave screens, dashboard, replacements or clock.
+// Admin does not use Leave for himself either (Engro, 14 Oct 2026).
+const APPROVER_ROLES = ['manager', 'hr_admin', 'super_admin']
 const APPROVER_BLOCKED = ['/leave-balance', '/my-leaves', '/apply-leave', '/dashboard', '/replacements', '/clock']
 
 // The router matches addresses without regard to capital letters, so this must too
@@ -77,8 +79,8 @@ function RoleGate({ children }: { children: React.ReactNode }) {
     : user?.role === 'rota_manager' ? ROTA_PATHS
     : null
   if (allowed && !under(pathname, allowed)) return <Navigate to={homePathFor(user?.role)} replace />
-  if (user?.role === 'manager' && under(pathname, APPROVER_BLOCKED)) {
-    return <Navigate to={homePathFor(user.role)} replace />
+  if (APPROVER_ROLES.includes(user?.role ?? '') && under(pathname, APPROVER_BLOCKED)) {
+    return <Navigate to={homePathFor(user?.role)} replace />
   }
   return <>{children}</>
 }
