@@ -96,7 +96,7 @@ export default function Layout() {
   ] : isApprover ? [
     { to: '/approvals',     Icon: ClipboardList, label: 'Approvals' },
     { to: '/team-leave',    Icon: Users,         label: 'Employees' },
-    ...(isSharedAccount ? [] : [{ to: '/apply-leave', Icon: FileText, label: 'Apply' }]),
+    { to: '/calendar',      Icon: CalendarDays,  label: 'Calendar' },
     alerts,
   ] : isRota ? [
     { to: '/calendar',        Icon: CalendarDays,  label: 'Calendar' },
@@ -158,9 +158,7 @@ export default function Layout() {
             <>
               {sectionLabel('My Leave')}
               {myLeaveItems}
-              {/* Replacements stay as they were until the client decides (open point) */}
-              {sectionLabel('Replacements')}
-              {navItem('/replacements', RefreshCw, 'My Replacements')}
+              {/* My Replacements switched off for Operators (Engro, 13 Oct 2026) */}
             </>
           )}
 
@@ -170,21 +168,12 @@ export default function Layout() {
               {sectionLabel('Approvals')}
               {navItem('/approvals',  ClipboardList, 'Pending Approvals')}
               {navItem('/team-leave', Users,         'Employee Leave Dashboard')}
-              {/* A shared login belongs to no single person, so it has no personal leave screens */}
-              {!isSharedAccount && (
-                <>
-                  {sectionLabel('My Leave')}
-                  {myLeaveItems}
-                </>
-              )}
-              {/* Screens that existed before; kept so nothing the team uses disappears */}
+              {/* Supervisors and SICs only manage their teams' approvals here
+                  (Engro, 13 Oct 2026): no My Leave, Dashboard, My Replacements or Clock In/Out */}
               {sectionLabel('More')}
-              {navItem('/dashboard',     LayoutDashboard, 'Dashboard')}
               {navItem('/calendar',      CalendarDays,    'Team Calendar')}
               {navItem('/team',          Users,           'My Team')}
               {navItem('/team-balances', BarChart3,       'Team Balances')}
-              {navItem('/replacements',  RefreshCw,       'My Replacements')}
-              {navItem('/clock',         Clock,           'Clock In / Out')}
             </>
           )}
 

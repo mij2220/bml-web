@@ -117,6 +117,8 @@ export default function EmployeeProfilePage() {
   // Edit modal
   const [editModal, setEditModal] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>(EMPTY_EDIT);
+  // Units whose whole staff this SIC sees in the Leave module
+  const [sicUnits, setSicUnits] = useState<string[]>([]);
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState("");
   const [departments, setUnits] = useState<DropdownOption[]>([]);
@@ -214,6 +216,7 @@ export default function EmployeeProfilePage() {
       role: employee.role || "",
       is_shared_account: (employee as any).is_shared_account ? "true" : "false",
     });
+    setSicUnits(((employee as any).sic_units ?? []).map((u: { id: string }) => u.id));
     setEditModal(true);
   };
 
@@ -222,10 +225,11 @@ export default function EmployeeProfilePage() {
     setEditError("");
     try {
       // Only send non-empty values to avoid validation errors on optional fields
-      const payload: Record<string, string> = {};
+      const payload: Record<string, string | string[]> = {};
       for (const [k, v] of Object.entries(editForm)) {
         if (v !== "") payload[k] = v;
       }
+      if (editForm.role === "manager") payload.sic_unit_ids = sicUnits;
       await api.patch(`/employees/${id}/`, payload);
       await fetchEmployee();
       setEditModal(false);
@@ -606,6 +610,21 @@ export default function EmployeeProfilePage() {
                       {filteredManagers.map(m => <option key={m.id} value={m.id}>{m.full_name} ({m.employee_id})</option>)}
                     </select>
                   </div>
+                  {editForm.role === "manager" && (
+                    <div className="col-span-2">
+                      <label className={labelCls}>As SIC, also sees all staff of these units</label>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1">
+                        {departments.map(d => (
+                          <label key={d.id} className="flex items-center gap-1.5 text-sm">
+                            <input type="checkbox" checked={sicUnits.includes(d.id)}
+                              onChange={e => setSicUnits(s => e.target.checked ? [...s, d.id] : s.filter(x => x !== d.id))} />
+                            {d.name}
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">For SICs covering more than one unit (e.g. Plant-2: AMM-3 and URUT-3). They see these units' staff and leave; approvals still follow each person's own Supervisor and SIC.</p>
+                    </div>
+                  )}
                   <div>
                     <label className={labelCls}>Branch</label>
                     <select value={editForm.branch_id} onChange={set("branch_id")} className={inputCls}>

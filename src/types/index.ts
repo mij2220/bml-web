@@ -86,6 +86,9 @@ export interface LeaveApplication {
   stage_label?: string
   /** Remarks from the Supervisor / SIC when the application was returned */
   returned_remark?: string
+  /** Why an approved leave was cancelled, and by whom (Supervisor / SIC / Admin) */
+  cancel_reason?: string
+  cancelled_by_name?: string
   returned_by?: string
   /** Who the application is waiting for (detail only) */
   waiting_for?: string

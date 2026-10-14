@@ -188,6 +188,7 @@ export default function LeaveTypesPage() {
 
   return (
     <div className="max-w-5xl space-y-4">
+      <LeaveSettingsCard />
       <div className="flex items-center justify-between">
         {/* Inactive toggle */}
         <button
@@ -288,6 +289,36 @@ export default function LeaveTypesPage() {
           onSave={load}
         />
       )}
+    </div>
+  )
+}
+
+
+/** Leave settings Admin can switch without a release. */
+function LeaveSettingsCard() {
+  const [on, setOn] = useState<boolean | null>(null)
+  const [msg, setMsg] = useState('')
+  useEffect(() => {
+    client.get('/leave-settings/').then(r => setOn(!!r.data.data?.sic_unit_visibility)).catch(() => {})
+  }, [])
+  const toggle = async (v: boolean) => {
+    try {
+      const r = await client.put('/leave-settings/', { sic_unit_visibility: v })
+      setOn(!!r.data.data?.sic_unit_visibility); setMsg('Saved')
+      setTimeout(() => setMsg(''), 2000)
+    } catch (e: any) { setMsg(e.response?.data?.message ?? 'Could not save.') }
+  }
+  if (on === null) return null
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 p-4">
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" className="w-5 h-5 mt-0.5" checked={on} onChange={e => toggle(e.target.checked)} />
+        <span>
+          <span className="block text-sm font-semibold text-slate-900">SICs see all staff of the units they cover</span>
+          <span className="block text-xs text-slate-500 mt-0.5">The units are ticked in each SIC's employee record (for example the Plant-2 SIC: AMM-3 and URUT-3). Turned off, an SIC sees only the people assigned to them. Approvals are not affected.</span>
+        </span>
+        {msg && <span className="ml-auto text-xs text-emerald-700 whitespace-nowrap">{msg}</span>}
+      </label>
     </div>
   )
 }
