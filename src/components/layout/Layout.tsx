@@ -25,7 +25,7 @@ export default function Layout() {
   const refreshToken = useAuthStore(s => s.refreshToken)
   const updateUser = useAuthStore(s => s.updateUser)
   const { modules, get: getModule, hasRole } = useModules()
-  const mod = moduleOfPath(location.pathname)
+  const mod = moduleOfPath(location.pathname, isHR)
   const att = getModule('attendance')
   const ot = getModule('overtime')
   const attTeam = !!att && att.level !== 'own'

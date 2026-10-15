@@ -97,11 +97,11 @@ function ModuleHome({ module }: { module: 'attendance' | 'overtime' }) {
 function RoleGate({ children }: { children: React.ReactNode }) {
   const user = useAuthStore(s => s.user)
   const { pathname } = useLocation()
-  const { has, get } = useModules()
+  const { has, get, isAdmin: isAdminUser } = useModules()
   if (pathname === '/') return <>{children}</>
   // Attendance, Overtime and Admin tabs: only for people who have that module.
   // (The server refuses the data as well; this only keeps the web app tidy.)
-  const mod = moduleOfPath(pathname)
+  const mod = moduleOfPath(pathname, isAdminUser)
   if (mod !== 'leave') {
     if (!has(mod)) return <Navigate to={homePathFor(user?.role)} replace />
     // Team screens need a role in the module; members alone get their own screens

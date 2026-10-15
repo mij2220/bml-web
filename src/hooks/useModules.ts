@@ -4,10 +4,14 @@ import type { ModuleAccess, ModuleKey } from '../types'
 /** Which module a path belongs to. Leave keeps its original addresses. */
 export const ADMIN_PATHS = ['/employees', '/org-chart', '/departments', '/leave-types', '/quota-management',
   '/reports', '/audit-log', '/admin']
-export function moduleOfPath(pathname: string): ModuleKey {
+/** Supervisors / SICs open Employees from their Leave menu (their own team);
+ *  for Admin it stays under the Admin tab. */
+const TEAM_PATHS = ['/employees']
+export function moduleOfPath(pathname: string, isAdmin = true): ModuleKey {
   const p = pathname.toLowerCase()
   if (p.startsWith('/attendance')) return 'attendance'
   if (p.startsWith('/overtime')) return 'overtime'
+  if (!isAdmin && TEAM_PATHS.some(a => p === a || p.startsWith(a + '/'))) return 'leave'
   if (ADMIN_PATHS.some(a => p === a || p.startsWith(a + '/'))) return 'admin'
   return 'leave'
 }
