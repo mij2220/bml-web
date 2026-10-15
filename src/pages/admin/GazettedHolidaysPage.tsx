@@ -16,7 +16,7 @@ export default function GazettedHolidaysPage() {
   const remove = async (id: string) => { try { await shiftsAdmin.removeHoliday(id); setToast('Removed'); load() } catch (e) { setToast(errMsg(e)) } }
   return (
     <div className="max-w-3xl mx-auto space-y-4">
-      <Note>Gazetted holidays drive the overtime rules: hours worked on these days count at triple rate, and a call-out under 4 hours counts as 12 hours. Changes apply to days not yet locked and to every statement worked out afterwards.</Note>
+      <Note>Gazetted holidays drive the overtime rules: hours worked on these days count at triple rate, and a call-out under 4 hours counts as 12 hours. Changes apply to days not yet locked and to every statement worked out afterwards. In Leave, a Supervisor or SIC gives one compensatory day (CD) to anyone who worked on a holiday, from the person's Leave Balances.</Note>
       <div className="flex items-center gap-2">
         <button className="p-2 rounded-lg hover:bg-slate-100" onClick={() => setYear(year - 1)} aria-label="Previous year"><ChevronLeft size={18} /></button>
         <h2 className="text-lg font-bold">{year}</h2>
