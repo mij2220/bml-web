@@ -215,6 +215,8 @@ export default function Layout() {
               {navItem('/calendar',      CalendarDays,    'Team Calendar')}
               {navItem('/team',          Users,           'My Team')}
               {navItem('/team-balances', BarChart3,       'Team Balances')}
+              {/* Their team's employees; they adjust leave balances there (Engro, 15 Oct 2026) */}
+              {navItem('/employees',     Users,           'Employees')}
             </>
           )}
 

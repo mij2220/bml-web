@@ -106,10 +106,15 @@ const EMPTY_EDIT: EditForm = {
 export default function EmployeeProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isHR } = useAuth();
+  const { isHR, isApprover, user } = useAuth();
+  // Supervisors / SICs adjust their team's balances themselves, with a reason (Engro, 15 Oct 2026).
+  // Not their own; the server checks the team as well.
+  const [adjustError, setAdjustError] = useState("");
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
+  const isSelf = !!user && !!employee && String(employee.employee_id) === String(user.employee_id);
+  const canAdjust = isHR || (isApprover && !isSelf);
   const [leaveHistory, setLeaveHistory] = useState<LeaveRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"profile" | "balances" | "history" | "attendance">("profile");
@@ -258,7 +263,8 @@ export default function EmployeeProfilePage() {
 
   const handleAdjust = async () => {
     if (!adjustModal || !adjustDays) return;
-    setAdjustSaving(true);
+    if (!isHR && !adjustNote.trim()) { setAdjustError("Please give the reason for this adjustment."); return; }
+    setAdjustSaving(true); setAdjustError("");
     try {
       await api.post(`/employees/${id}/balances/`, {
         leave_type_id: adjustModal.leave_type_id || adjustModal.id,
@@ -266,8 +272,10 @@ export default function EmployeeProfilePage() {
         note: adjustNote,
       });
       await fetchBalances();
-      setAdjustModal(null); setAdjustDays(""); setAdjustNote("");
-    } catch { alert("Failed to adjust balance."); }
+      setAdjustModal(null); setAdjustDays(""); setAdjustNote(""); setAdjustError("");
+    } catch (err: any) {
+      setAdjustError(err?.response?.data?.message || "Failed to adjust balance.");
+    }
     finally { setAdjustSaving(false); }
   };
 
@@ -334,6 +342,7 @@ export default function EmployeeProfilePage() {
             </span>
             <p className="text-xs text-gray-400 mt-1 font-mono">{employee.p_number || employee.employee_id}</p>
             <div className="mt-4 space-y-2">
+              {isHR && (
               <button onClick={openEditModal}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-700 hover:bg-gray-50">
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,6 +350,7 @@ export default function EmployeeProfilePage() {
                 </svg>
                 Edit Profile
               </button>
+              )}
               {isHR && (
                 <button onClick={handleDeactivate}
                   className={`w-full flex items-center justify-center gap-2 px-4 py-2 border rounded-xl text-sm font-medium ${isActive ? "border-red-200 text-red-600 hover:bg-red-50" : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"}`}>
@@ -427,7 +437,7 @@ export default function EmployeeProfilePage() {
                     <p className="text-sm text-gray-800 font-medium">
                       {employee.account_code
                         ? <span className="font-mono bg-gray-50 border border-gray-200 px-3 py-1 rounded-lg">{employee.account_code}</span>
-                        : <span className="text-gray-400 font-normal font-sans">Not set — click Edit Profile to add</span>}
+                        : <span className="text-gray-400 font-normal font-sans">Not set</span>}
                     </p>
                   </div>
                 </div>
@@ -460,7 +470,7 @@ export default function EmployeeProfilePage() {
                             <div className="h-full rounded-full" style={{ width: `${pct}%`, background: b.leave_type_color || "#3b82f6" }}></div>
                           </div>
                         </div>
-                        {isHR && <button onClick={() => setAdjustModal(b)} className="text-xs text-blue-600 hover:underline flex-shrink-0">Adjust</button>}
+                        {canAdjust && <button onClick={() => { setAdjustModal(b); setAdjustError(""); }} className="text-xs text-blue-600 hover:underline flex-shrink-0">Adjust</button>}
                       </div>
                     );
                   })}</div>
@@ -681,12 +691,13 @@ export default function EmployeeProfilePage() {
             <input type="number" value={adjustDays} onChange={e => setAdjustDays(e.target.value)}
               placeholder="e.g. 3 or -1"
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <label className={labelCls}>Note (optional)</label>
+            <label className={labelCls}>{isHR ? "Note (optional)" : "Reason (required)"}</label>
             <input type="text" value={adjustNote} onChange={e => setAdjustNote(e.target.value)}
               placeholder="Reason for adjustment"
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {adjustError && <p className="text-sm text-red-600 mb-3">{adjustError}</p>}
             <div className="flex gap-2">
-              <button onClick={() => { setAdjustModal(null); setAdjustDays(""); setAdjustNote(""); }}
+              <button onClick={() => { setAdjustModal(null); setAdjustDays(""); setAdjustNote(""); setAdjustError(""); }}
                 className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
               <button onClick={handleAdjust} disabled={adjustSaving || !adjustDays}
                 className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
