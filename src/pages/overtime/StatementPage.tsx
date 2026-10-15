@@ -95,7 +95,7 @@ export default function StatementPage({ mode }: { mode: 'overtime' | 'attendance
                 <tbody className="divide-y divide-slate-100 tabular-nums">
                   {rows.map(r => (
                     <tr key={r.employee_id} className="hover:bg-slate-50 cursor-pointer" onClick={() => ot && showDetail(r)}>
-                      <td className="px-3 py-2"><b>{r.name}</b> {r.trainee && <Chip tone="purple">Trainee</Chip>} {r.provisional && <Chip tone="amber">Provisional</Chip>}<div className="text-xs text-slate-500">P.No. {r.p_number}{r.post ? ` · ${r.post}` : ''}</div></td>
+                      <td className="px-3 py-2"><b>{r.name}</b> {r.trainee && <Chip tone="purple">Trainee</Chip>} {r.provisional && <Chip tone="amber">Provisional</Chip>} {!!r.alerts?.length && <span title={r.alerts.join('\n')}><Chip tone="red">{r.alerts.length} alert{r.alerts.length > 1 ? 's' : ''}</Chip></span>}<div className="text-xs text-slate-500">P.No. {r.p_number}{r.post ? ` · ${r.post}` : ''}</div>{!!r.alerts?.length && <div className="text-xs text-red-600">{r.alerts[0]}{r.alerts.length > 1 ? ` (+${r.alerts.length - 1} more)` : ''}</div>}</td>
                       <td className="text-center">{r.group}</td>
                       {!ot && <><td className="text-center">{r.days_worked}</td><td className="text-center">{r.leave_days}</td><td className="text-center">{r.absent_days}</td><td className="text-center font-semibold">{num(r.attendance_hours)}</td></>}
                       <td className="text-center">{num(r.ot_normal)}</td><td className="text-center">{num(r.ot_training)}</td><td className="text-center">{num(r.ot_callout)}</td>

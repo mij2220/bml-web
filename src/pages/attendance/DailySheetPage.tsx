@@ -172,6 +172,11 @@ export default function DailySheetPage() {
                 <Tile label="Attendance hours" value={num(current.counts.attendance_hours)} />
                 <Tile label="Extra hours" value={num(current.counts.extra_hours)} tone="orange" />
               </div>
+              {!!current.counts.min_staff && (
+                current.counts.short
+                  ? <Note kind="warn"><b>Short by {current.counts.short}:</b> this shift needs {current.counts.min_staff} people; {current.counts.present} present{current.counts.covering ? ` and ${current.counts.covering} covering` : ''}. Arrange cover with extra hours.</Note>
+                  : <p className="text-xs text-emerald-700">Manpower OK: {current.counts.present} present{current.counts.covering ? ` + ${current.counts.covering} covering` : ''} (needs {current.counts.min_staff}).</p>
+              )}
             </>
           )}
 

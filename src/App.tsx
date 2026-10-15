@@ -37,6 +37,9 @@ import AttendanceCorrectionPage from './pages/attendance/AttendanceCorrectionPag
 import DailySheetPage from './pages/attendance/DailySheetPage'
 import SheetsPage from './pages/attendance/SheetsPage'
 import RosterPage from './pages/attendance/RosterPage'
+import SchedulePage from './pages/attendance/SchedulePage'
+import FollowUpsPage from './pages/attendance/FollowUpsPage'
+import CalculatorPage from './pages/overtime/CalculatorPage'
 import CorrectionsPage from './pages/attendance/CorrectionsPage'
 import MyAttendancePage from './pages/attendance/MyAttendancePage'
 import PrintSheetPage from './pages/attendance/PrintSheetPage'
@@ -65,7 +68,7 @@ function Home() {
 // screen. Supervisor / SIC and Admin keep access to everything they had.
 // This only tidies the web app — the server enforces the real permissions.
 const OPERATOR_PATHS = ['/leave-balance', '/my-leaves', '/apply-leave', '/notifications', '/settings']
-const ROTA_PATHS = ['/calendar', '/approved-leaves', '/leave-balance', '/my-leaves', '/apply-leave', '/replacements', '/notifications', '/settings']
+const ROTA_PATHS = ['/calendar', '/approved-leaves', '/schedule', '/leave-balance', '/my-leaves', '/apply-leave', '/replacements', '/notifications', '/settings']
 // Supervisors and SICs (and shared logins) only manage their teams' approvals
 // (Engro, 13 Oct 2026): no personal leave screens, dashboard, replacements or clock.
 // Admin does not use Leave for himself either (Engro, 14 Oct 2026).
@@ -164,12 +167,16 @@ export default function App() {
         <Route path="attendance/sheet"       element={<DailySheetPage />} />
         <Route path="attendance/days"        element={<SheetsPage />} />
         <Route path="attendance/roster"      element={<RosterPage />} />
+        <Route path="attendance/schedule"    element={<SchedulePage />} />
+        <Route path="attendance/follow-ups"  element={<FollowUpsPage />} />
+        <Route path="schedule"               element={<SchedulePage />} />
         <Route path="attendance/corrections" element={<CorrectionsPage />} />
         <Route path="attendance/monthly"     element={<StatementPage mode="attendance" key="att" />} />
         <Route path="attendance/print"       element={<PrintSheetPage />} />
         <Route path="overtime"               element={<ModuleHome module="overtime" />} />
         <Route path="overtime/my"            element={<MyOvertimePage />} />
         <Route path="overtime/statement"     element={<StatementPage mode="overtime" key="ot" />} />
+        <Route path="overtime/calculator"    element={<CalculatorPage />} />
         <Route path="admin"                  element={<Navigate to="/employees" replace />} />
         <Route path="admin/sections"         element={<ShiftSectionsPage />} />
         <Route path="admin/sections/:id"     element={<SectionSetupPage />} />

@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { useAuthStore } from '../../store/authStore'
 import { logout, getMe } from '../../api/auth'
 import { getNotificationCount } from '../../api/notifications'
+import { shiftsApi } from '../../api/shifts'
 import { useModules, moduleOfPath, MODULE_LABEL, MODULE_HOME } from '../../hooks/useModules'
 import { homePathFor } from '../../hooks/useAuth'
 import {
@@ -31,6 +32,15 @@ export default function Layout() {
   const attTeam = !!att && att.level !== 'own'
   const attWorker = hasRole('attendance', ['marker', 'reviewer', 'manager'])
   const attMonthly = hasRole('attendance', ['reviewer', 'manager', 'accounts'])
+  const attReviewer = hasRole('attendance', ['reviewer', 'manager'])
+  // What is waiting in Attendance (badges); refreshed when the page changes
+  const [todo, setTodo] = useState<{ cd_due: number; unplanned_leave: number; corrections: number } | null>(null)
+  useEffect(() => {
+    if (!attTeam || mod !== 'attendance') return
+    shiftsApi.todo().then(setTodo).catch(() => {})
+  }, [attTeam, mod, location.pathname])
+  // Staging is a test copy; make that obvious so nobody mistakes it for the live app
+  const isStaging = typeof window !== 'undefined' && /shiftledger|localhost|127\.0\.0\.1/i.test(window.location.hostname)
   const otTeam = !!ot && ot.level !== 'own'
   const goModule = (k: string) => navigate(k === 'leave' ? homePathFor(user?.role) : MODULE_HOME[k as 'attendance'])
 
@@ -75,7 +85,7 @@ export default function Layout() {
     navigate('/login')
   }
 
-  const navItem = (to: string, Icon: any, label: string) => (
+  const navItem = (to: string, Icon: any, label: string, badge?: number) => (
     <NavLink
       to={to}
       className={({ isActive }) =>
@@ -87,7 +97,8 @@ export default function Layout() {
       }
     >
       <Icon size={17} className="flex-shrink-0" />
-      <span>{label}</span>
+      <span className="flex-1">{label}</span>
+      {!!badge && <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">{badge}</span>}
     </NavLink>
   )
 
@@ -217,6 +228,7 @@ export default function Layout() {
               {navItem('/team-balances', BarChart3,       'Team Balances')}
               {/* Their team's employees; they adjust leave balances there (Engro, 15 Oct 2026) */}
               {navItem('/employees',     Users,           'Employees')}
+              {navItem('/schedule',      CalendarRange,   'Shift Schedule')}
             </>
           )}
 
@@ -226,6 +238,7 @@ export default function Layout() {
               {sectionLabel('Rota')}
               {navItem('/calendar',        CalendarDays,  'Leave Calendar')}
               {navItem('/approved-leaves', CalendarCheck, 'Approved Leaves')}
+              {navItem('/schedule',        CalendarRange, 'Shift Schedule')}
               {sectionLabel('My Leave')}
               {myLeaveItems}
             </>
@@ -250,6 +263,7 @@ export default function Layout() {
               {navItem('/calendar',      CalendarDays,  'Team Calendar')}
               {navItem('/team',          Users,         'My Team')}
               {navItem('/team-balances', BarChart3,     'Team Balances')}
+              {navItem('/schedule',      CalendarRange, 'Shift Schedule')}
             </>
           )}
 
@@ -265,7 +279,9 @@ export default function Layout() {
                   {navItem('/attendance/sheet', ClipboardCheck, 'Daily sheet')}
                   {navItem('/attendance/days', CalendarRange, 'Days')}
                   {navItem('/attendance/roster', CalendarDays, 'Roster')}
-                  {attWorker && navItem('/attendance/corrections', FileWarning, 'Corrections')}
+                  {navItem('/attendance/schedule', CalendarRange, 'Shift schedule')}
+                  {attReviewer && navItem('/attendance/follow-ups', ClipboardList, 'Follow-ups', (todo?.cd_due ?? 0) + (todo?.unplanned_leave ?? 0))}
+                  {attWorker && navItem('/attendance/corrections', FileWarning, 'Corrections', todo?.corrections)}
                   {attMonthly && navItem('/attendance/monthly', BarChart3, 'Monthly hours')}
                 </>
               )}
@@ -276,7 +292,7 @@ export default function Layout() {
           {mod === 'overtime' && (
             <>
               {ot?.member && (<>{sectionLabel('My overtime')}{navItem('/overtime/my', Hourglass, 'My overtime')}</>)}
-              {otTeam && (<>{sectionLabel('Overtime')}{navItem('/overtime/statement', Sheet, 'Overtime statement')}</>)}
+              {otTeam && (<>{sectionLabel('Overtime')}{navItem('/overtime/statement', Sheet, 'Overtime statement')}{navItem('/overtime/calculator', Sliders, 'Calculator')}</>)}
             </>
           )}
 
@@ -379,6 +395,11 @@ export default function Layout() {
 
         {/* Page */}
         <main className={`flex-1 overflow-auto p-4 md:p-6 ${isMobile ? 'pb-20' : ''}`}>
+          {isStaging && (
+            <div className="mb-4 rounded-lg bg-amber-100 border border-amber-300 text-amber-900 text-xs font-semibold px-3 py-2">
+              TEST SYSTEM (staging). Entries here are for review only and do not affect the live leave app.
+            </div>
+          )}
           <Outlet />
         </main>
 

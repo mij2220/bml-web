@@ -19,7 +19,7 @@ export interface ShiftsMeta {
   today: string
 }
 
-export interface ShiftType { id: string; section: string; code: string; sheet_code: string; name: string; start_time: string; end_time: string; hours: string; premium: string; order: number }
+export interface ShiftType { id: string; section: string; code: string; sheet_code: string; name: string; start_time: string; end_time: string; hours: string; premium: string; order: number; min_staff?: number }
 export interface ShiftGroup { id: string; section: string; name: string; offset: number; order: number; member_count: number }
 export interface Post { id: string; section: string; code: string; name: string; order: number }
 export interface Section {
@@ -45,7 +45,7 @@ export interface Correction {
 }
 export interface SheetShift {
   code: string; name: string; sheet_code: string; start: string; end: string; hours: string; groups: string[]
-  counts: { rostered: number; present: number; leave: number; absent: number; holiday: number; attendance_hours: string; extra_hours: string }
+  counts: { rostered: number; present: number; leave: number; absent: number; holiday: number; attendance_hours: string; extra_hours: string; covering?: number; min_staff?: number; short?: number }
   submission: { status: 'draft' | 'submitted' | 'sent_back'; by: string | null; at: string | null; remarks: string }
 }
 export interface Sheet {
@@ -61,7 +61,7 @@ export interface StatementRow {
   days_worked: number; attendance_hours: string; leave_days: number; leave_by_code: Record<string, number>
   absent_days: number; gh_days: number; ot_normal: string; ot_training: string; ot_callout: string; ot_total: string
   cover_shifts: number; single: string; double: string; triple: string; equivalent_single: string
-  evening_hours: string; night_hours: string; provisional: boolean
+  evening_hours: string; night_hours: string; provisional: boolean; alerts?: string[]
   days: { date: string; day_type: string; code: string; shift: string; hours: string; extra: string; single: string; double: string; triple: string }[]
 }
 export interface StatementSummary {
@@ -92,6 +92,23 @@ export const shiftsApi = {
     d<{ summary: StatementSummary; rows: StatementRow[] }>(client.get('/overtime/statement/', { params: { section, month, ...(detail ? { detail: '1' } : {}) } })),
   myOvertime: (month: string) => d<{ summary: StatementSummary | null; row: StatementRow | null }>(client.get('/overtime/my/', { params: { month } })),
   closeMonth: (section: string, month: string, reopen = false) => d<any>(client.post('/overtime/close-month/', { section, month, reopen })),
+  scheduleSections: () => d<{ id: string; name: string; pattern: string[] }[]>(client.get('/shifts/schedule/sections/')),
+  schedule: (section: string, year: number) => d<{ year: number; start: string; days: number; section: string; gh: string[]; rows: { group_id: string; group: string; shifts: string }[] }>(client.get('/shifts/schedule/', { params: { section, year } })),
+  onDuty: (section: string, date: string) => d<{ section: string; date: string; is_gh: boolean; shifts: { code: string; name: string; start: string; end: string; groups: { group: string; people: { employee_id: string; name: string; p_number: string; post: string; trainee: boolean }[] }[] }[] }>(client.get('/shifts/on-duty/', { params: { section, date } })),
+  cdDue: (section: string, month: string) => d<any[]>(client.get('/shifts/cd-due/', { params: { section, month } })),
+  giveCd: (body: { section: string; employee_id: string; holiday_id: string; note?: string }) => client.post('/shifts/cd-due/', body).then(r => r.data),
+  unplanned: (section: string, month: string) => d<any[]>(client.get('/shifts/unplanned-leave/', { params: { section, month } })),
+  raiseLeave: (body: { section: string; employee_id: string; code: string; start: string; end: string; reason?: string }) => client.post('/shifts/unplanned-leave/', body).then(r => r.data),
+  todo: () => d<{ sent_back: number; to_review: number; to_lock: number; corrections: number; cd_due: number; unplanned_leave: number; total: number }>(client.get('/shifts/todo/')),
+  calculator: () => d<{ rules: Record<string, any>; examples: any[] }>(client.get('/overtime/calculator/')),
+  calculate: (body: any) => d<any>(client.post('/overtime/calculator/', body)),
+  downloadFile: async (path: string, params: Record<string, any>, filename: string) => {
+    const r = await client.get(path, { params, responseType: 'blob' })
+    const url = URL.createObjectURL(r.data)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename; a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  },
   download: async (path: string, params: Record<string, string>, filename: string) => {
     const r = await client.get(path, { params: { ...params, export: 'csv' }, responseType: 'blob' })
     const url = URL.createObjectURL(r.data)
@@ -119,6 +136,7 @@ export const shiftsAdmin = {
   overrides: crud('roster-overrides'),
   roles: crud('module-roles'),
   settings: () => d<any>(client.get('/shifts/admin/settings/')),
+  spreadGroups: (section: string) => client.post(`/shifts/admin/sections/${section}/spread-groups/`, {}).then(r => r.data),
   saveSettings: (body: any) => d<any>(client.put('/shifts/admin/settings/', body)),
   holidays: (year: number) => d<any[]>(client.get('/shifts/admin/holidays/', { params: { year } })),
   addHoliday: (body: any) => d<any>(client.post('/shifts/admin/holidays/', body)),

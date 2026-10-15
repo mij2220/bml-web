@@ -39,6 +39,13 @@ export default function SectionSetupPage() {
 
 type P = { s: Section; reload: () => void; toast: (m: string) => void }
 
+// Engro's rota (Abdullah, 6 Oct 2026): 6 mornings, 6 evenings, 6 nights with 2 days off in between
+const ROTATIONS: [string, string][] = [
+  ['6-6-6 with 2 off (24 days)', 'M,M,M,M,M,M,O,O,E,E,E,E,E,E,O,O,N,N,N,N,N,N,O,O'],
+  ['2-2-2 with 2 off (8 days)', 'M,M,E,E,N,N,O,O'],
+  ['General, Mon-Fri', 'G,G,G,G,G,O,O'],
+]
+
 function People({ s, reload, toast }: P) {
   const [members, setMembers] = useState<any[] | null>(null)
   const [add, setAdd] = useState<string | null>(null)
@@ -193,7 +200,7 @@ function Shifts({ s, reload, toast }: P) {
   return (
     <Card className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-3 py-2">Shift</th><th>Sheet code</th><th>Starts</th><th>Ends</th><th>Hours</th><th>Premium</th></tr></thead>
+        <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-3 py-2">Shift</th><th>Sheet code</th><th>Starts</th><th>Ends</th><th>Hours</th><th>Premium</th><th title="Fewest people the shift needs; the daily sheet shows a shortfall">Min. staff</th></tr></thead>
         <tbody className="divide-y divide-slate-100">
           {s.shift_types.map(t => (
             <tr key={t.id}>
@@ -204,6 +211,7 @@ function Shifts({ s, reload, toast }: P) {
               <td className="text-center"><input type="number" step={0.5} className="border border-slate-300 rounded px-2 py-1 w-16 text-center" defaultValue={t.hours} onBlur={e => e.target.value !== t.hours && save(t.id, 'hours', e.target.value)} /></td>
               <td className="text-center"><select className="border border-slate-300 rounded px-1 py-1" defaultValue={t.premium} onChange={e => save(t.id, 'premium', e.target.value)}>
                 <option value="none">None</option><option value="evening">Evening (12%)</option><option value="night">Night (17%)</option></select></td>
+              <td className="text-center"><input type="number" min={0} className="border border-slate-300 rounded px-2 py-1 w-16 text-center" defaultValue={t.min_staff ?? 0} onBlur={e => Number(e.target.value) !== (t.min_staff ?? 0) && save(t.id, 'min_staff', Number(e.target.value) || 0)} /></td>
             </tr>
           ))}
         </tbody>
@@ -229,14 +237,26 @@ function Posts({ s, reload, toast }: P) {
 function Details({ s, reload, toast }: P) {
   const [f, setF] = useState({ name: s.name, code: s.code, pattern: s.pattern, pattern_anchor: s.pattern_anchor, print_title: s.print_title, is_active: s.is_active })
   const save = async () => { try { await shiftsAdmin.sections.update(s.id, f); toast('Saved'); reload() } catch (e) { toast(errMsg(e)) } }
+  const spread = async () => {
+    if (f.pattern !== s.pattern) { toast('Save the rotation first'); return }
+    try { const r = await shiftsAdmin.spreadGroups(s.id); toast(r.message); reload() } catch (e) { toast(errMsg(e)) }
+  }
   return (
     <Card className="p-4 space-y-3 max-w-xl">
       <Field label="Section name"><input className={inputCls} value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></Field>
       <Field label="Heading on the printed sheet"><input className={inputCls} value={f.print_title} onChange={e => setF({ ...f, print_title: e.target.value })} /></Field>
       <Field label="Rotation" hint="Changing it changes the roster for every day not yet locked."><input className={inputCls} value={f.pattern} onChange={e => setF({ ...f, pattern: e.target.value })} /></Field>
+      <div className="flex flex-wrap gap-2 -mt-1">
+        <span className="text-xs text-slate-500 self-center">Quick fill:</span>
+        {ROTATIONS.map(([label, p]) => <Btn key={label} onClick={() => setF({ ...f, pattern: p })}>{label}</Btn>)}
+      </div>
       <Field label="Rotation starts on"><input type="date" className={inputCls} value={f.pattern_anchor} onChange={e => setF({ ...f, pattern_anchor: e.target.value })} /></Field>
       <label className="flex items-center gap-2 text-sm min-h-[40px]"><input type="checkbox" className="w-5 h-5" checked={f.is_active} onChange={e => setF({ ...f, is_active: e.target.checked })} /> Section in use (untick to switch it off; nothing is deleted)</label>
-      <Btn kind="primary" onClick={save}>Save</Btn>
+      <div className="flex flex-wrap gap-2">
+        <Btn kind="primary" onClick={save}>Save</Btn>
+        <Btn onClick={spread} title="Group A starts the rotation; each next group starts evenly later">Place groups evenly on the rotation</Btn>
+      </div>
+      <p className="text-xs text-slate-500">After changing the rotation, place the groups evenly, then open Roster and check one day against the plant (e.g. "today Group B is on Morning"). Move a group with its rotation offset under People if needed.</p>
     </Card>
   )
 }
