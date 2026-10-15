@@ -110,6 +110,15 @@ export default function EmployeeProfilePage() {
   // Supervisors / SICs adjust their team's balances themselves, with a reason (Engro, 15 Oct 2026).
   // Not their own; the server checks the team as well.
   const [adjustError, setAdjustError] = useState("");
+  // Worked on a gazetted holiday -> 1 compensatory day (Engro, 15 Oct 2026)
+  const [ghRows, setGhRows] = useState<any[]>([]);
+  const [ghComp, setGhComp] = useState<any[]>([]);
+  const [ghModal, setGhModal] = useState(false);
+  const [ghPick, setGhPick] = useState("");
+  const [ghNote, setGhNote] = useState("");
+  const [ghSaving, setGhSaving] = useState(false);
+  const [ghError, setGhError] = useState("");
+  const [ghDone, setGhDone] = useState("");
 
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
@@ -140,9 +149,36 @@ export default function EmployeeProfilePage() {
 
   useEffect(() => { fetchEmployee(); }, [id]);
   useEffect(() => {
-    if (activeTab === "balances") fetchBalances();
+    if (activeTab === "balances") { fetchBalances(); fetchHolidayComp(); }
     if (activeTab === "history") fetchLeaveHistory();
   }, [activeTab]);
+
+  const fetchHolidayComp = async () => {
+    try {
+      const y = new Date().getFullYear();
+      const [c, a, b] = await Promise.all([
+        api.get(`/employees/${id}/holiday-compensation/`),
+        api.get(`/gazetted-holidays/?year=${y}`),
+        api.get(`/gazetted-holidays/?year=${y - 1}`),
+      ]);
+      setGhComp(c.data?.data ?? []);
+      const today = new Date().toISOString().slice(0, 10);
+      setGhRows([...(b.data?.data ?? []), ...(a.data?.data ?? [])].filter((h: any) => h.date <= today).reverse());
+    } catch { /* section stays empty */ }
+  };
+
+  const handleHolidayComp = async () => {
+    if (!ghPick) { setGhError("Choose the gazetted holiday."); return; }
+    setGhSaving(true); setGhError("");
+    try {
+      const r = await api.post(`/employees/${id}/holiday-compensation/`, { holiday_id: ghPick, note: ghNote });
+      setGhDone(r.data?.message || "Compensatory day added.");
+      setGhModal(false); setGhPick(""); setGhNote("");
+      await Promise.all([fetchBalances(), fetchHolidayComp()]);
+    } catch (err: any) {
+      setGhError(err?.response?.data?.message || "Could not add the compensatory day.");
+    } finally { setGhSaving(false); }
+  };
 
   const fetchEmployee = async () => {
     try {
@@ -447,7 +483,16 @@ export default function EmployeeProfilePage() {
 
           {activeTab === "balances" && (
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-              <h3 className="text-sm font-semibold text-gray-800 mb-4">Leave Balances</h3>
+              <div className="flex items-center justify-between gap-2 mb-4 flex-wrap">
+                <h3 className="text-sm font-semibold text-gray-800">Leave Balances</h3>
+                {canAdjust && (
+                  <button onClick={() => { setGhModal(true); setGhError(""); setGhDone(""); }}
+                    className="text-xs font-medium px-3 py-1.5 rounded-lg border border-emerald-200 text-emerald-700 hover:bg-emerald-50">
+                    Worked on a gazetted holiday
+                  </button>
+                )}
+              </div>
+              {ghDone && <p className="text-sm text-emerald-700 mb-3">{ghDone}</p>}
               {balances.length === 0
                 ? <p className="text-gray-400 text-sm text-center py-10">No leave balances found.</p>
                 : <div className="space-y-3">{balances.map(b => {
@@ -475,6 +520,20 @@ export default function EmployeeProfilePage() {
                     );
                   })}</div>
               }
+              {ghComp.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Compensatory days for gazetted holidays</h4>
+                  <div className="divide-y divide-gray-100 border border-gray-100 rounded-xl">
+                    {ghComp.map(c => (
+                      <div key={c.id} className="flex items-center gap-3 px-3 py-2 text-sm">
+                        <span className="w-28 font-medium">{new Date(c.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        <span className="flex-1">{c.holiday}{c.note ? <span className="text-gray-400"> · {c.note}</span> : null}</span>
+                        <span className="text-xs text-gray-500">+{Number(c.days)} CD{c.granted_by ? ` · by ${c.granted_by}` : ""}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -675,6 +734,37 @@ export default function EmployeeProfilePage() {
               <button onClick={handleEditSave} disabled={editSaving}
                 className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50">
                 {editSaving ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Worked on a gazetted holiday ───────────────── */}
+      {ghModal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6">
+            <h3 className="text-base font-semibold text-gray-900 mb-1">Worked on a gazetted holiday</h3>
+            <p className="text-sm text-gray-500 mb-4">Adds 1 compensatory day (CD) to {employee?.full_name}'s balance.</p>
+            <label className={labelCls}>Gazetted holiday</label>
+            <select value={ghPick} onChange={e => setGhPick(e.target.value)}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-3 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">— Choose —</option>
+              {ghRows.filter(h => !ghComp.some(c => c.holiday_id === h.id)).map(h => (
+                <option key={h.id} value={h.id}>{h.name} · {new Date(h.date + "T00:00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}</option>
+              ))}
+            </select>
+            {ghRows.length === 0 && <p className="text-xs text-gray-500 mb-3">No gazetted holidays have been set yet. Admin adds them under Gazetted Holidays.</p>}
+            <label className={labelCls}>Note (optional)</label>
+            <input type="text" value={ghNote} onChange={e => setGhNote(e.target.value)} placeholder="e.g. Worked morning shift"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            {ghError && <p className="text-sm text-red-600 mb-3">{ghError}</p>}
+            <div className="flex gap-2">
+              <button onClick={() => { setGhModal(false); setGhPick(""); setGhNote(""); setGhError(""); }}
+                className="flex-1 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm hover:bg-gray-50">Cancel</button>
+              <button onClick={handleHolidayComp} disabled={ghSaving || !ghPick}
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 disabled:opacity-50">
+                {ghSaving ? "Saving..." : "Add 1 CD"}
               </button>
             </div>
           </div>
