@@ -4,6 +4,7 @@ import { getEmployees } from '../../api/employees'
 import AddEmployeeModal from './AddEmployeeModal'
 import { Search, Users, UserCheck, UserX, Plus, Download } from 'lucide-react'
 import { downloadCSV } from '../../utils/tableUtils'
+import { useAuth } from '../../hooks/useAuth'
 import type { Employee } from '../../types'
 
 const roleColor: Record<string, string> = {
@@ -23,6 +24,9 @@ const statusColor: Record<string, string> = {
 
 export default function EmployeesPage() {
   const navigate = useNavigate()
+  // Supervisors / SICs see their own team here (the server limits the list); adding
+  // people and login details stay with Admin (Engro, 15 Oct 2026).
+  const { isHR } = useAuth()
   const [employees, setEmployees] = useState<Employee[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -59,9 +63,8 @@ export default function EmployeesPage() {
       if (e.role === 'manager') return 'Manager@1234'
       return 'Employee@1234'
     }
-    downloadCSV('employees.csv',
-      ['Full Name', 'P.No', 'Employee ID', 'Email', 'Login Password', 'Unit', 'Designation', 'Role', 'Status', 'Employment Type', 'Manager (L1)', 'Incharge (L2)'],
-      sortedEmployees.map((e: any) => [
+    const headers = ['Full Name', 'P.No', 'Employee ID', 'Email', 'Login Password', 'Unit', 'Designation', 'Role', 'Status', 'Employment Type', 'Manager (L1)', 'Incharge (L2)']
+    const rows = sortedEmployees.map((e: any) => [
         e.full_name,
         e.p_number || e.employee_id,
         e.employee_id,
@@ -75,7 +78,10 @@ export default function EmployeesPage() {
         e.manager_name || '',
         e.shift_incharge_name || '',
       ])
-    )
+    // Login passwords only in Admin's download
+    const pw = headers.indexOf('Login Password')
+    if (isHR) downloadCSV('employees.csv', headers, rows)
+    else downloadCSV('employees.csv', headers.filter((_, i) => i !== pw), rows.map(r => r.filter((_, i) => i !== pw)))
   }
 
   const load = async (q?: string) => {
@@ -169,12 +175,14 @@ export default function EmployeesPage() {
         >
           <Download size={14} /> <span className="hidden md:inline">CSV</span>
         </button>
+        {isHR && (
         <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors flex-shrink-0"
         >
           <Plus size={15} /> <span className="hidden md:inline">Add Employee</span>
         </button>
+        )}
       </div>
 
       {/* Content */}
