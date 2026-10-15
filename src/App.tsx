@@ -20,6 +20,7 @@ import TeamPage from './pages/team/TeamPage'
 import EmployeesPage from './pages/admin/EmployeesPage'
 import EmployeeProfilePage from './pages/admin/EmployeeProfilePage'
 import LeaveTypesPage from './pages/admin/LeaveTypesPage'
+import GazettedHolidaysLeavePage from './pages/admin/GazettedHolidaysLeavePage'
 import ReportsPage from './pages/admin/ReportsPage'
 import DepartmentsPage from './pages/admin/DepartmentsPage'
 import OrgChartPage from './pages/admin/OrgChartPage'
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="employees"        element={<EmployeesPage />} />
         <Route path="employees/:id"    element={<EmployeeProfilePage />} />
         <Route path="leave-types"      element={<LeaveTypesPage />} />
+        <Route path="gazetted-holidays" element={<GazettedHolidaysLeavePage />} />
         <Route path="reports"          element={<ReportsPage />} />
         <Route path="departments"      element={<DepartmentsPage />} />
         <Route path="org-chart"        element={<OrgChartPage />} />

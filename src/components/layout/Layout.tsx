@@ -9,7 +9,7 @@ import {
   Settings, LogOut, Bell, Menu, X, ClipboardList,
   BarChart3, Building2, BookOpen, RefreshCw,
   Timer, Megaphone, ScrollText, CreditCard,
-  Trees, FolderOpen, Building, Wallet, CalendarCheck
+  Trees, FolderOpen, Building, Wallet, CalendarCheck, Flag
 } from 'lucide-react'
 
 export default function Layout() {
@@ -220,6 +220,7 @@ export default function Layout() {
               {navItem('/org-chart',         Trees,       'Org Chart')}
               {navItem('/departments',       Building2,   'Units')}
               {navItem('/leave-types',       Settings,    'Leave Types')}
+              {navItem('/gazetted-holidays', Flag,        'Gazetted Holidays')}
               {/* HIDDEN: {navItem('/holiday-calendar',  CalendarDays,'Holiday Calendar')} — backend /api/v1/holidays/ not implemented yet */}
               {/* HIDDEN: {navItem('/shifts',            Timer,       'Shifts')} */}
               {/* HIDDEN: {navItem('/branches',          Building,    'Branches')} */}
