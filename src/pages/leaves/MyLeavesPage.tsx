@@ -2,7 +2,7 @@ import { downloadCSV } from '../../utils/tableUtils'
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import client from '../../api/client'
-import { getMyLeaves, cancelLeave, getLeaveDetail } from '../../api/leaves'
+import { getMyLeaves, cancelLeave, getLeaveDetail, openCertificate } from '../../api/leaves'
 import { Plus, Eye, XCircle, ChevronRight, Pencil, CornerUpLeft } from 'lucide-react'
 import type { LeaveApplication } from '../../types'
 import StageBadge, { stageLabelOf } from '../../components/leaves/StageBadge'
@@ -138,13 +138,10 @@ function LeaveDetailModal({ id, onClose, onEdit, onCancel }: {
               )}
 
               {/* Attachment */}
-              {(leave as any).attachment_url && (
+              {(leave as any).has_certificate && (
                 <div className="mt-3 pt-3 border-t border-slate-100">
                   <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Medical Certificate</p>
-                  <a
-                    href={(leave as any).attachment_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button type="button" onClick={() => openCertificate(String(leave.id))}
                     className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors"
                   >
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -152,7 +149,7 @@ function LeaveDetailModal({ id, onClose, onEdit, onCancel }: {
                         d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
                     View Attachment
-                  </a>
+                  </button>
                 </div>
               )}
 

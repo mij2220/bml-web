@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { downloadCSV } from '../../utils/tableUtils'
-import { getPendingApprovals, approveLeave, rejectLeave, returnLeave, getMyLeaves } from '../../api/leaves'
+import { getPendingApprovals, approveLeave, rejectLeave, returnLeave, getMyLeaves, openCertificate } from '../../api/leaves'
 import { getEmployees } from '../../api/employees'
 import client from '../../api/client'
 import { CheckCircle, XCircle, Users, ChevronDown, ChevronUp, History, Clock , Download, CornerUpLeft } from 'lucide-react'
@@ -544,11 +544,11 @@ export default function ApprovalsPage() {
                   )}
 
                   {/* Attachment */}
-                  {(selectedHistory as any).attachment_url && (
-                    <a href={(selectedHistory as any).attachment_url} target="_blank" rel="noopener noreferrer"
+                  {(selectedHistory as any).has_certificate && (
+                    <button type="button" onClick={() => openCertificate(String(selectedHistory.id))}
                       className="flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors">
                       📎 View Medical Certificate
-                    </a>
+                    </button>
                   )}
                 </div>
 
@@ -725,13 +725,13 @@ export default function ApprovalsPage() {
                         <div key={l}><p className="text-xs text-slate-400">{l}</p><p className="text-sm font-medium text-slate-900 mt-0.5">{v}</p></div>
                       ))}
                     </div>
-                    {(app as any).attachment_url && (
+                    {(app as any).has_certificate && (
                       <div className="mt-3 pt-3 border-t border-slate-200">
                         <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Medical Certificate</p>
-                        <a href={(app as any).attachment_url} target="_blank" rel="noopener noreferrer"
+                        <button type="button" onClick={() => openCertificate(String(app.id))}
                           className="inline-flex items-center gap-2 px-3 py-2 bg-blue-50 border border-blue-200 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-100 transition-colors">
                           View Medical Certificate
-                        </a>
+                        </button>
                       </div>
                     )}
                   </div>
