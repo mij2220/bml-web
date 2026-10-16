@@ -31,7 +31,7 @@ export default function SectionSetupPage() {
       {tab === 'people' && <People s={s} reload={load} toast={setToast} />}
       {tab === 'shifts' && <Shifts s={s} reload={load} toast={setToast} />}
       {tab === 'posts' && <Posts s={s} reload={load} toast={setToast} />}
-      {tab === 'details' && <Details s={s} reload={load} toast={setToast} />}
+      {tab === 'details' && <Details key={`${s.pattern}|${s.pattern_anchor}`} s={s} reload={load} toast={setToast} />}
       <Toast msg={toast} onDone={() => setToast(null)} />
     </div>
   )
