@@ -32,6 +32,7 @@ export default function SectionSetupPage() {
       {tab === 'shifts' && <Shifts s={s} reload={load} toast={setToast} />}
       {tab === 'posts' && <Posts s={s} reload={load} toast={setToast} />}
       {tab === 'details' && <Details key={`${s.pattern}|${s.pattern_anchor}`} s={s} reload={load} toast={setToast} />}
+      {tab === 'details' && <RotationFromDate s={s} toast={setToast} />}
       <Toast msg={toast} onDone={() => setToast(null)} />
     </div>
   )
@@ -263,6 +264,77 @@ function Details({ s, reload, toast }: P) {
         <Btn onClick={engro2026} title="Rotation, start date and groups A-D exactly as Engro's Production Department Shift Schedule 2026">Use Engro 2026 schedule</Btn>
       </div>
       <p className="text-xs text-slate-500">After changing the rotation, place the groups evenly, then open Roster and check one day against the plant (e.g. "today Group B is on Morning"). Move a group with its rotation offset under People if needed.</p>
+    </Card>
+  )
+}
+
+
+/** Change the rotation from a date on (Engro: the schedule changes every year).
+ *  Days before the date keep the rotation above; locked days never change. */
+function RotationFromDate({ s, toast }: { s: Section; toast: (m: string) => void }) {
+  const [data, setData] = useState<any>(null)
+  const nextJan = `${new Date().getFullYear() + 1}-01-01`
+  const [f, setF] = useState({ start_date: nextJan, mode: 'continue', pattern: '', offsets: {} as Record<string, string>, note: '' })
+  const load = () => shiftsAdmin.rotationChanges(s.id).then(d => {
+    setData(d)
+    setF(x => ({ ...x, pattern: x.pattern || d.current.pattern, offsets: Object.keys(x.offsets).length ? x.offsets : Object.fromEntries(Object.entries(d.current.offsets).map(([k, v]) => [k, String(v)])) }))
+  }).catch(e => toast(errMsg(e)))
+  useEffect(() => { load() }, [s.id])
+  const add = async () => {
+    const body: any = { start_date: f.start_date, note: f.note }
+    if (f.mode === 'continue') body.mode = 'continue'
+    else { body.pattern = f.pattern; body.pattern_anchor = f.start_date; body.offsets = f.offsets }
+    if (!confirm(`Use this rotation from ${f.start_date}? Days before that date stay as they are.`)) return
+    try { const r = await shiftsAdmin.addRotationChange(s.id, body); toast(r.message); load() } catch (e) { toast(errMsg(e)) }
+  }
+  const remove = async (id: string) => {
+    if (!confirm('Remove this rotation change?')) return
+    try { const r = await shiftsAdmin.removeRotationChange(s.id, id); toast(r.message); load() } catch (e) { toast(errMsg(e)) }
+  }
+  if (!data) return null
+  return (
+    <Card className="p-4 space-y-3 max-w-xl mt-4">
+      <div>
+        <h3 className="font-semibold text-slate-800">Change the rotation from a date</h3>
+        <p className="text-xs text-slate-500">For a new year's schedule. Days before the date keep the rotation above; locked days never change{data.last_locked ? ` (last locked day: ${data.last_locked})` : ''}.</p>
+      </div>
+      {data.changes.length > 0 && (
+        <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl">
+          {data.changes.map((c: any) => (
+            <div key={c.id} className="p-2.5 text-sm flex flex-wrap items-center gap-2">
+              <b>From {c.start_date}</b>
+              <span className="text-xs text-slate-500 break-all">{c.pattern}</span>
+              <span className="text-xs text-slate-500">{Object.entries(c.offsets).map(([g, o]) => `${g} ${o}`).join(', ')}</span>
+              {c.note && <span className="text-xs text-slate-400">{c.note}</span>}
+              {!c.started && <Btn onClick={() => remove(c.id)}>Remove</Btn>}
+            </div>
+          ))}
+        </div>
+      )}
+      <Field label="New rotation starts on"><input type="date" className={inputCls} value={f.start_date} onChange={e => setF({ ...f, start_date: e.target.value })} /></Field>
+      <div className="space-y-1 text-sm">
+        <label className="flex items-center gap-2"><input type="radio" checked={f.mode === 'continue'} onChange={() => setF({ ...f, mode: 'continue' })} /> Same rotation, every group carries on where it is</label>
+        <label className="flex items-center gap-2"><input type="radio" checked={f.mode === 'new'} onChange={() => setF({ ...f, mode: 'new' })} /> New rotation (from Engro's new schedule)</label>
+      </div>
+      {f.mode === 'new' && (
+        <>
+          <Field label="Rotation"><input className={inputCls} value={f.pattern} onChange={e => setF({ ...f, pattern: e.target.value })} /></Field>
+          <div className="flex flex-wrap gap-2 -mt-1">{ROTATIONS.map(([label, p]) => <Btn key={label} onClick={() => setF({ ...f, pattern: p })}>{label}</Btn>)}</div>
+          <div>
+            <p className="text-xs text-slate-500 mb-1">Position of each group on the start date (0 = first day of the rotation)</p>
+            <div className="flex flex-wrap gap-2">
+              {s.groups.map(g => (
+                <label key={g.id} className="text-sm flex items-center gap-1">Group {g.name}
+                  <input type="number" min={0} className="border border-slate-300 rounded px-2 py-1 w-16" value={f.offsets[g.name] ?? '0'}
+                    onChange={e => setF({ ...f, offsets: { ...f.offsets, [g.name]: e.target.value } })} />
+                </label>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+      <Field label="Note (optional)"><input className={inputCls} value={f.note} onChange={e => setF({ ...f, note: e.target.value })} placeholder="e.g. Engro schedule 2027" /></Field>
+      <Btn kind="primary" onClick={add}>Save rotation from this date</Btn>
     </Card>
   )
 }
