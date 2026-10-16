@@ -41,7 +41,8 @@ type P = { s: Section; reload: () => void; toast: (m: string) => void }
 
 // Engro's rota (Abdullah, 6 Oct 2026): 6 mornings, 6 evenings, 6 nights with 2 days off in between
 const ROTATIONS: [string, string][] = [
-  ['6-6-6 with 2 off (24 days)', 'M,M,M,M,M,M,O,O,E,E,E,E,E,E,O,O,N,N,N,N,N,N,O,O'],
+  // Engro Production 2026: Morning -> Night -> Evening, 2 off after each
+  ['6-6-6 with 2 off (24 days)', 'M,M,M,M,M,M,O,O,N,N,N,N,N,N,O,O,E,E,E,E,E,E,O,O'],
   ['2-2-2 with 2 off (8 days)', 'M,M,E,E,N,N,O,O'],
   ['General, Mon-Fri', 'G,G,G,G,G,O,O'],
 ]
@@ -241,6 +242,10 @@ function Details({ s, reload, toast }: P) {
     if (f.pattern !== s.pattern) { toast('Save the rotation first'); return }
     try { const r = await shiftsAdmin.spreadGroups(s.id); toast(r.message); reload() } catch (e) { toast(errMsg(e)) }
   }
+  const engro2026 = async () => {
+    if (!confirm("Set this section to Engro's 2026 shift schedule (groups A-D)? Days not yet locked follow the new schedule.")) return
+    try { const r = await shiftsAdmin.spreadGroups(s.id, 'engro_2026'); toast(r.message); reload() } catch (e) { toast(errMsg(e)) }
+  }
   return (
     <Card className="p-4 space-y-3 max-w-xl">
       <Field label="Section name"><input className={inputCls} value={f.name} onChange={e => setF({ ...f, name: e.target.value })} /></Field>
@@ -255,6 +260,7 @@ function Details({ s, reload, toast }: P) {
       <div className="flex flex-wrap gap-2">
         <Btn kind="primary" onClick={save}>Save</Btn>
         <Btn onClick={spread} title="Group A starts the rotation; each next group starts evenly later">Place groups evenly on the rotation</Btn>
+        <Btn onClick={engro2026} title="Rotation, start date and groups A-D exactly as Engro's Production Department Shift Schedule 2026">Use Engro 2026 schedule</Btn>
       </div>
       <p className="text-xs text-slate-500">After changing the rotation, place the groups evenly, then open Roster and check one day against the plant (e.g. "today Group B is on Morning"). Move a group with its rotation offset under People if needed.</p>
     </Card>

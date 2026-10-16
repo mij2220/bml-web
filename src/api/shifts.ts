@@ -136,7 +136,7 @@ export const shiftsAdmin = {
   overrides: crud('roster-overrides'),
   roles: crud('module-roles'),
   settings: () => d<any>(client.get('/shifts/admin/settings/')),
-  spreadGroups: (section: string) => client.post(`/shifts/admin/sections/${section}/spread-groups/`, {}).then(r => r.data),
+  spreadGroups: (section: string, preset?: string) => client.post(`/shifts/admin/sections/${section}/spread-groups/`, preset ? { preset } : {}).then(r => r.data),
   saveSettings: (body: any) => d<any>(client.put('/shifts/admin/settings/', body)),
   holidays: (year: number) => d<any[]>(client.get('/shifts/admin/holidays/', { params: { year } })),
   addHoliday: (body: any) => d<any>(client.post('/shifts/admin/holidays/', body)),
