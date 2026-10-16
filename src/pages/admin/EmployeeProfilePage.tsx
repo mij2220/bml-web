@@ -57,6 +57,7 @@ interface LeaveRecord {
 interface DropdownOption { id: string; name: string; }
 
 interface EditForm {
+  unit_role?: string;
   full_name: string;
   email: string;
   phone: string;
@@ -221,7 +222,7 @@ export default function EmployeeProfilePage() {
         api.get("/departments/"),
         api.get("/designations/"),
         api.get("/branches/"),
-        api.get("/employees/?page_size=200"),
+        api.get("/employees/?page_size=1000"),
       ]);
       setUnits(unwrapList(deptRes) as DropdownOption[]);
       setDesignations(unwrapList(desigRes) as (DropdownOption & { department?: string })[]);
@@ -256,6 +257,7 @@ export default function EmployeeProfilePage() {
       experience_start_date: employee.experience_start_date || "",
       role: employee.role || "",
       is_shared_account: (employee as any).is_shared_account ? "true" : "false",
+      unit_role: (employee as any).unit_role || "",
     });
     setSicUnits(((employee as any).sic_units ?? []).map((u: { id: string }) => u.id));
     setEditModal(true);
@@ -271,6 +273,7 @@ export default function EmployeeProfilePage() {
         if (v !== "") payload[k] = v;
       }
       if (editForm.role === "manager") payload.sic_unit_ids = sicUnits;
+      payload.unit_role = editForm.unit_role ?? "";
       await api.patch(`/employees/${id}/`, payload);
       await fetchEmployee();
       setEditModal(false);
@@ -664,6 +667,16 @@ export default function EmployeeProfilePage() {
                       <option value="true">Several people (shared login)</option>
                     </select>
                     <p className="text-[11px] text-gray-400 mt-1">Shared login: each approval asks for the person's own name and P.No.</p>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Place in the unit</label>
+                    <select value={editForm.unit_role ?? ""} onChange={set("unit_role")} className={inputCls}>
+                      <option value="">Staff / Operator</option>
+                      <option value="supervisor">Shift Supervisor / Engineer</option>
+                      <option value="sic">Shift In-Charge (SIC)</option>
+                      <option value="manager">Unit Manager</option>
+                    </select>
+                    <p className="text-[11px] text-gray-400 mt-1">With unit-based approval on, Supervisors, SICs and the Unit Manager approve for the whole unit. Give them the Supervisor / SIC login role too.</p>
                   </div>
                   <div>
                     <label className={labelCls}>L1 Supervisor</label>

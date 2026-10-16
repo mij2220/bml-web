@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getEmployees } from '../../api/employees'
 import AddEmployeeModal from './AddEmployeeModal'
-import { Search, Users, UserCheck, UserX, Plus, Download } from 'lucide-react'
+import OrganogramModal from './OrganogramModal'
+import { Search, Users, UserCheck, UserX, Plus, Download, Network } from 'lucide-react'
 import { downloadCSV } from '../../utils/tableUtils'
 import { useAuth } from '../../hooks/useAuth'
 import type { Employee } from '../../types'
@@ -32,6 +33,7 @@ export default function EmployeesPage() {
   const [search, setSearch] = useState('')
   const [total, setTotal] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
+  const [showOrg, setShowOrg] = useState(false)
   const [deptFilter, setDeptFilter] = useState('')
   const [departments, setDepartments] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<string | null>(null)
@@ -87,7 +89,7 @@ export default function EmployeesPage() {
   const load = async (q?: string) => {
     setLoading(true)
     try {
-      const params: Record<string, string> = { page_size: '200' }
+      const params: Record<string, string> = { page_size: '1000' }
       if (q) params.search = q
       const { data } = await getEmployees(params)
       const emps = data.data ?? []
@@ -177,6 +179,14 @@ export default function EmployeesPage() {
         </button>
         {isHR && (
         <button
+          onClick={() => setShowOrg(true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 font-medium flex-shrink-0"
+        >
+          <Network size={14} /> <span className="hidden md:inline">Load organogram</span>
+        </button>
+        )}
+        {isHR && (
+        <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors flex-shrink-0"
         >
@@ -260,7 +270,7 @@ export default function EmployeesPage() {
                     </td>
                     <td className="px-4 py-3 text-sm font-mono text-slate-600">{emp.p_number || emp.employee_id}</td>
                     <td className="px-4 py-3 text-sm text-slate-700">{emp.department_name}</td>
-                    <td className="px-4 py-3 text-sm text-slate-600">{emp.designation_name}</td>
+                    <td className="px-4 py-3 text-sm text-slate-600">{emp.designation_name}{(emp as any).unit_role ? <span className="ml-1.5 text-[10px] font-semibold uppercase bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{({ supervisor: 'Supervisor', sic: 'SIC', manager: 'Unit Mgr' } as Record<string, string>)[(emp as any).unit_role]}</span> : null}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs font-semibold px-2 py-1 rounded-full capitalize ${roleColor[emp.role] ?? 'bg-slate-100 text-slate-600'}`}>
                         {emp.role?.replace('_', ' ')}
@@ -304,6 +314,7 @@ export default function EmployeesPage() {
           </div>
         </div>
       )}
+      {showOrg && <OrganogramModal onClose={() => setShowOrg(false)} onDone={() => load()} />}
       {showAdd && (
         <AddEmployeeModal
           onClose={() => setShowAdd(false)}

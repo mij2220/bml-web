@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/client";
 import { RefreshCw, ChevronDown, ChevronUp, AlertCircle, CheckCircle } from "lucide-react";
+import YearEndCard from "../../components/leaves/YearEndCard";
 
 interface EmployeeQuota {
   id: string;
@@ -94,6 +95,8 @@ export default function QuotaManagementPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
+
+      <YearEndCard />
 
       {/* Header actions */}
       <div className="bg-white rounded-2xl border border-slate-200 p-4">

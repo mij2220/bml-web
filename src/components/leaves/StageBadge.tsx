@@ -4,6 +4,7 @@ import type { LeaveApplication } from '../../types'
 export const stageStyle: Record<string, string> = {
   pending_supervisor: 'bg-amber-100 text-amber-800 border border-amber-200',
   pending_sic:        'bg-sky-100 text-sky-800 border border-sky-200',
+  pending_manager:    'bg-indigo-100 text-indigo-800 border border-indigo-200',
   pending_admin:      'bg-amber-100 text-amber-800 border border-amber-200',
   pending:            'bg-amber-100 text-amber-800 border border-amber-200',
   approved:           'bg-emerald-100 text-emerald-700 border border-emerald-200',
