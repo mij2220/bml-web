@@ -56,6 +56,7 @@ export default function ApplyLeavePage() {
   const [address, setAddress] = useState("");
   const [dutyDate, setDutyDate] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
+  const [existingCert, setExistingCert] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -110,6 +111,8 @@ export default function ApplyLeavePage() {
       setContact(d.contact_during_leave ?? "");
       setAddress(d.address_during_leave ?? "");
       setDutyDate(d.duty_date_for_cd ?? "");
+      setExistingCert(d.has_certificate ? (d.certificate_name || "Certificate attached") : null);
+      if (d.has_certificate) setSickSubtype("with_mc");
       calcDays(d.start_date ?? "", d.end_date ?? "");
     }).catch((err: unknown) => {
       const status = (err as {response?: {status?: number}})?.response?.status;
@@ -137,14 +140,14 @@ export default function ApplyLeavePage() {
         selectedBalance.splits_used >= selectedBalance.splits_allowed) {
       e.leave_type = "You have used all " + selectedBalance.splits_allowed + " " + (selectedType?.code || "") + " splits for this year.";
     }
-    // SL max 2 days per split — calculate directly from dates
-    if (selectedType?.code === "SL" && startDate && endDate) {
+    // Sick leave (Engro, 16 Oct 2026): at most 2 days in one go without a medical
+    // certificate; more only with the certificate attached.
+    if (selectedType?.code === "SL" && startDate && endDate && !isHalfDay) {
       const start = new Date(startDate);
       const end = new Date(endDate);
-      const diffMs = end.getTime() - start.getTime();
-      const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24)) + 1;
-      if (diffDays > 2) {
-        e.end_date = "Sick leave split cannot exceed 2 days. Please apply separately for each 2-day period.";
+      const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      if (diffDays > 2 && sickSubtype !== "with_mc") {
+        e.end_date = "Sick leave of more than 2 days needs a medical certificate. Choose \"With Medical Certificate\" and attach it, or apply for 2 days or fewer.";
       }
     }
     if (!startDate) e.start_date = "Start date is required";
@@ -157,7 +160,8 @@ export default function ApplyLeavePage() {
     if (!address.trim()) e.address = "Address during leave is required";
     if (selectedType?.code === "CD" && !dutyDate) e.duty_date = "Required for CD leave";
     if (selectedType?.code === "SL" && !sickSubtype) e.sick_subtype = "Please select sick leave sub-type";
-    if (selectedType?.code === "SL" && sickSubtype === "with_mc" && !attachment) e.attachment = "Medical certificate required";
+    if (selectedType?.code === "SL" && sickSubtype === "with_mc" && !attachment && !existingCert) e.attachment = "Medical certificate required";
+    if (attachment && attachment.size > 5 * 1024 * 1024) e.attachment = "The file is too large (maximum 5 MB)";
     return e;
   };
 
@@ -180,18 +184,18 @@ export default function ApplyLeavePage() {
       if (dutyDate) payload.duty_date_for_cd = dutyDate;
       if (sickSubtype) payload.sick_subtype = sickSubtype;
 
-      const res = editId
-        ? await api.patch(`/leaves/${editId}/`, payload)
-        : await api.post("/leaves/", payload);
-      const created = ((res.data as Record<string,unknown>)?.data ?? res.data) as Record<string,unknown>;
-
-      if (attachment && created?.id) {
+      // The certificate goes with the application in one request, so the server can
+      // check it (sick leave over 2 days) and nothing is half-saved.
+      let body: Record<string, unknown> | FormData = payload;
+      if (attachment && selectedType?.code === "SL" && sickSubtype === "with_mc") {
         const fd = new FormData();
+        Object.entries(payload).forEach(([k, v]) => { if (v !== undefined && v !== null) fd.append(k, String(v)); });
         fd.append("attachment", attachment);
-        await api.post(`/leaves/${created.id}/attachment/`, fd, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        body = fd;
       }
+      const cfg = body instanceof FormData ? { headers: { "Content-Type": "multipart/form-data" } } : undefined;
+      if (editId) await api.patch(`/leaves/${editId}/`, body, cfg);
+      else await api.post("/leaves/", body, cfg);
       setSubmitted(true);
     } catch (err: unknown) {
       const data = (err as {response?: {data?: Record<string,unknown>}})?.response?.data;
@@ -336,7 +340,7 @@ export default function ApplyLeavePage() {
           <div className="p-5" style={{background:"#eff6ff", borderLeft:"4px solid #3b82f6"}}>
             <label className="block text-sm font-medium mb-2" style={{color:"#1e3a5f"}}>Sick leave type <span className="text-red-500">*</span></label>
             <div className="flex gap-3">
-              {[{value:"with_mc",label:"With Medical Certificate",desc:"MC required"},{value:"without_mc",label:"Without MC",desc:"No certificate needed"}].map(o => (
+              {[{value:"with_mc",label:"With Medical Certificate",desc:"Needed for more than 2 days"},{value:"without_mc",label:"Without MC",desc:"Up to 2 days"}].map(o => (
                 <button key={o.value} type="button" onClick={() => { setSickSubtype(o.value); setErrors(e => ({...e, sick_subtype:""})); }}
                   className={`flex-1 p-3 rounded-xl border text-left bg-white transition-all ${sickSubtype===o.value ? "border-blue-500 ring-1 ring-blue-500" : "border-blue-200 hover:border-blue-400"}`}>
                   <p className={`text-sm font-medium ${sickSubtype===o.value ? "text-blue-900" : "text-gray-700"}`}>{o.label}</p>
@@ -435,7 +439,9 @@ export default function ApplyLeavePage() {
             <div className="flex-1 min-w-0">
               {attachment
                 ? <p className="text-sm font-medium text-emerald-700 truncate">{attachment.name}</p>
-                : <p className="text-sm text-gray-500">Click to attach (PDF, JPG, PNG — max 5MB)</p>}
+                : existingCert
+                  ? <p className="text-sm text-emerald-700 truncate">Attached: {existingCert} <span className="text-gray-500">(click to replace)</span></p>
+                  : <p className="text-sm text-gray-500">Click to attach (PDF, JPG, PNG — max 5MB)</p>}
             </div>
             {attachment && (
               <button type="button" onClick={e => { e.preventDefault(); setAttachment(null); }} className="text-xs text-red-500 hover:underline flex-shrink-0">Remove</button>

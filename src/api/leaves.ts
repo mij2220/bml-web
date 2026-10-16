@@ -59,3 +59,19 @@ export const getMyBalances = (employeeId: string, year?: number) =>
 /** Employee edits their own application; on a returned application this also resubmits it. */
 export const updateLeave = (id: string, data: Record<string, unknown>) =>
   client.patch<ApiResponse<LeaveApplication>>(`/leaves/${id}/`, data)
+
+/** Open the medical certificate of an application in a new tab. The file comes
+ *  through the API (it needs the login), so it is fetched and shown as a blob. */
+export async function openCertificate(applicationId: string): Promise<void> {
+  const win = window.open('', '_blank')
+  try {
+    const r = await client.get(`/leaves/${applicationId}/attachment/`, { responseType: 'blob' })
+    const url = URL.createObjectURL(r.data as Blob)
+    if (win) win.location.href = url
+    else window.location.href = url
+    setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  } catch {
+    if (win) win.close()
+    alert('The certificate could not be opened.')
+  }
+}
