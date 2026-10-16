@@ -296,28 +296,38 @@ export default function LeaveTypesPage() {
 
 /** Leave settings Admin can switch without a release. */
 function LeaveSettingsCard() {
-  const [on, setOn] = useState<boolean | null>(null)
+  const [st, setSt] = useState<{ sic_unit_visibility: boolean; unit_approval: boolean } | null>(null)
   const [msg, setMsg] = useState('')
   useEffect(() => {
-    client.get('/leave-settings/').then(r => setOn(!!r.data.data?.sic_unit_visibility)).catch(() => {})
+    client.get('/leave-settings/').then(r => setSt({ sic_unit_visibility: !!r.data.data?.sic_unit_visibility, unit_approval: !!r.data.data?.unit_approval })).catch(() => {})
   }, [])
-  const toggle = async (v: boolean) => {
+  const toggle = async (key: 'sic_unit_visibility' | 'unit_approval', v: boolean) => {
+    if (key === 'unit_approval' && !confirm(v
+      ? 'Turn on unit-based approval? Every request will go to all Supervisors of the person\'s unit, then all SICs. Requests already waiting move to the unit\'s approvers.'
+      : 'Turn off unit-based approval? Requests go back to each person\'s own Supervisor and SIC.')) return
     try {
-      const r = await client.put('/leave-settings/', { sic_unit_visibility: v })
-      setOn(!!r.data.data?.sic_unit_visibility); setMsg('Saved')
+      const r = await client.put('/leave-settings/', { [key]: v })
+      setSt({ sic_unit_visibility: !!r.data.data?.sic_unit_visibility, unit_approval: !!r.data.data?.unit_approval }); setMsg('Saved')
       setTimeout(() => setMsg(''), 2000)
     } catch (e: any) { setMsg(e.response?.data?.message ?? 'Could not save.') }
   }
-  if (on === null) return null
+  if (st === null) return null
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4">
+    <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-4">
       <label className="flex items-start gap-3 cursor-pointer">
-        <input type="checkbox" className="w-5 h-5 mt-0.5" checked={on} onChange={e => toggle(e.target.checked)} />
+        <input type="checkbox" className="w-5 h-5 mt-0.5" checked={st.unit_approval} onChange={e => toggle('unit_approval', e.target.checked)} />
         <span>
-          <span className="block text-sm font-semibold text-slate-900">SICs see all staff of the units they cover</span>
-          <span className="block text-xs text-slate-500 mt-0.5">The units are ticked in each SIC's employee record (for example the Plant-2 SIC: AMM-3 and URUT-3). Turned off, an SIC sees only the people assigned to them. Approvals are not affected.</span>
+          <span className="block text-sm font-semibold text-slate-900">Unit-based approval</span>
+          <span className="block text-xs text-slate-500 mt-0.5">A request goes to every Shift Supervisor of the person's unit, then every SIC; any one of them approves. Unpaid Leave (3 levels) then goes to the Unit Manager. A Supervisor's leave goes to the SICs, an SIC's to the Unit Manager. Who is Supervisor / SIC / Unit Manager is set in each employee record (or by loading the organogram). Turned off, each person's own Supervisor and SIC approve.</span>
         </span>
         {msg && <span className="ml-auto text-xs text-emerald-700 whitespace-nowrap">{msg}</span>}
+      </label>
+      <label className="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" className="w-5 h-5 mt-0.5" checked={st.sic_unit_visibility} onChange={e => toggle('sic_unit_visibility', e.target.checked)} />
+        <span>
+          <span className="block text-sm font-semibold text-slate-900">SICs see all staff of the units they cover</span>
+          <span className="block text-xs text-slate-500 mt-0.5">The units are ticked in each SIC's employee record (for example the Plant-2 SIC: AMM-3 and URUT-3). Turned off, an SIC sees only the people assigned to them.</span>
+        </span>
       </label>
     </div>
   )

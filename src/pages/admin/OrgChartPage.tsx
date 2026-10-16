@@ -1,212 +1,94 @@
 import { useEffect, useState } from 'react'
-import { getEmployees } from '../../api/employees'
+import api from '../../api/client'
 
-interface Employee {
-  id: string
-  full_name: string
-  employee_id: string
-  p_number?: string
-  role: string
-  department_name?: string
-  designation_name?: string
-  reporting_manager_id?: string
-  shift_incharge_id?: string
-  status: string
-}
+interface Person { id: string; name: string; p_number: string; designation: string; unit_role: string; has_login: boolean; shared: boolean; covers_from?: string }
+interface Unit { id: string; name: string; managers: Person[]; sics: Person[]; supervisors: Person[]; staff: Person[]; total: number }
 
-const ROLE_STYLE: Record<string, { bg: string; border: string; badge: string; text: string }> = {
-  hr_admin:  { bg: 'bg-emerald-50', border: 'border-emerald-300', badge: 'bg-emerald-500', text: 'text-emerald-700' },
-  manager:   { bg: 'bg-purple-50',  border: 'border-purple-300',  badge: 'bg-purple-500',  text: 'text-purple-700' },
-  employee:  { bg: 'bg-blue-50',    border: 'border-blue-300',    badge: 'bg-blue-400',    text: 'text-blue-700' },
-}
+const TIER = [
+  ['managers', 'Unit Manager', 'bg-purple-50 border-purple-300 text-purple-800'],
+  ['sics', 'Shift In-Charge (SIC)', 'bg-sky-50 border-sky-300 text-sky-800'],
+  ['supervisors', 'Shift Supervisors / Engineers', 'bg-amber-50 border-amber-300 text-amber-800'],
+] as const
 
-interface DeptGroup {
-  name: string
-  incharge?: Employee   // L2
-  supervisor?: Employee // L1
-  operators: Employee[]
-}
-
-function EmpCard({ emp, collapsed, onToggle, childCount }: {
-  emp: Employee
-  collapsed?: boolean
-  onToggle?: () => void
-  childCount?: number
-}) {
-  const style = ROLE_STYLE[emp.role] || ROLE_STYLE.employee
-  const initials = emp.full_name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
-  const isManager = emp.role === 'manager' || emp.role === 'hr_admin'
-
+function Card({ p, tone }: { p: Person; tone: string }) {
+  const initials = p.name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
   return (
-    <div className="flex flex-col items-center">
-      <div
-        className={`relative rounded-2xl border-2 ${style.border} ${style.bg} p-3 w-36 text-center shadow-sm
-          ${onToggle ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-        onClick={onToggle}
-      >
-        <div className={`w-10 h-10 ${style.badge} rounded-full flex items-center justify-center text-white font-bold text-sm mx-auto mb-1`}>
-          {initials}
-        </div>
-        <p className="font-semibold text-slate-800 text-xs leading-tight truncate">{emp.full_name}</p>
-        <p className={`text-xs mt-0.5 ${style.text} leading-tight`} style={{fontSize:'10px'}}>
-          {emp.designation_name || emp.role}
-        </p>
-        <p className="text-slate-400 mt-0.5" style={{fontSize:'10px'}}>{emp.p_number || emp.employee_id}</p>
-        {onToggle && childCount !== undefined && childCount > 0 && (
-          <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2
-            ${style.border} ${style.bg} flex items-center justify-center text-xs font-bold ${style.text}`}>
-            {collapsed ? childCount : '−'}
-          </div>
-        )}
-      </div>
+    <div className={`rounded-xl border-2 ${tone} p-2.5 w-40 text-center`}>
+      <div className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center font-bold text-sm mx-auto mb-1">{initials}</div>
+      <p className="text-xs font-semibold text-slate-800 leading-tight">{p.name}</p>
+      <p className="text-[10px] text-slate-500 leading-tight mt-0.5">{p.designation}</p>
+      <p className="text-[10px] text-slate-400">{p.p_number}{p.covers_from ? ` · from ${p.covers_from}` : ''}</p>
     </div>
   )
 }
 
-function ConnectorLine() {
-  return <div className="w-px h-6 bg-slate-300 mx-auto mt-3" />
-}
-
-function HorizontalGroup({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="flex gap-4 items-start justify-center flex-wrap">
-      {children}
-    </div>
-  )
-}
-
+/** Org chart by unit (Engro, 15-16 Oct 2026): Unit Manager > SICs > Shift
+ *  Supervisors / Engineers > staff. Places come from each employee record or
+ *  from loading the organogram (Employees > Load organogram). */
 export default function OrgChartPage() {
-  const [deptGroups, setDeptGroups] = useState<DeptGroup[]>([])
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const [total, setTotal] = useState(0)
-  const [loading, setLoading] = useState(true)
+  const [units, setUnits] = useState<Unit[] | null>(null)
+  const [unitApproval, setUnitApproval] = useState(false)
+  const [sel, setSel] = useState('')
+  const [showStaff, setShowStaff] = useState(true)
+  const [err, setErr] = useState('')
 
   useEffect(() => {
-    document.getElementById('page-title')!.textContent = 'Org Chart'
-    getEmployees({ page_size: '200' }).then(r => {
-      const emps: Employee[] = (r.data as any)?.data ?? []
-      setTotal(emps.length)
-
-      // Skip admin (hr_admin role) — they don't belong to a department
-      const nonAdmin = emps.filter(e => e.role !== 'hr_admin')
-
-      // Group by department
-      const deptMap: Record<string, DeptGroup> = {}
-      nonAdmin.forEach(e => {
-        const dept = e.department_name || 'Unknown'
-        if (!deptMap[dept]) deptMap[dept] = { name: dept, operators: [] }
-
-        const desig = e.designation_name || ''
-        if (desig.toLowerCase().includes('incharge')) {
-          deptMap[dept].incharge = e
-        } else if (desig.toLowerCase().includes('supervisor') || desig.toLowerCase().includes('engineer')) {
-          deptMap[dept].supervisor = e
-        } else {
-          deptMap[dept].operators.push(e)
-        }
-      })
-
-      // Only show depts with at least one employee
-      const groups = Object.values(deptMap)
-        .filter(g => g.incharge || g.supervisor || g.operators.length > 0)
-        .sort((a, b) => a.name.localeCompare(b.name))
-
-      setDeptGroups(groups)
-
-      // Default: collapse operators
-      const initCollapsed: Record<string, boolean> = {}
-      groups.forEach(g => {
-        if (g.incharge)   initCollapsed[`${g.name}-incharge`]   = true
-        if (g.supervisor) initCollapsed[`${g.name}-supervisor`]  = true
-      })
-      setCollapsed(initCollapsed)
-      setLoading(false)
-    }).catch(() => setLoading(false))
+    const el = document.getElementById('page-title'); if (el) el.textContent = 'Org Chart'
+    api.get('/org-chart/').then(r => {
+      const u: Unit[] = r.data.data.units
+      setUnits(u); setUnitApproval(!!r.data.data.unit_approval); setSel(u[0]?.id ?? '')
+    }).catch(e => setErr(e.response?.data?.message ?? 'Could not load the org chart.'))
   }, [])
 
-  const toggle = (key: string) =>
-    setCollapsed(c => ({ ...c, [key]: !c[key] }))
-
-  if (loading) return (
-    <div className="flex items-center justify-center h-64 text-slate-400">Loading org chart…</div>
-  )
+  if (err) return <p className="text-sm text-red-600 p-4">{err}</p>
+  if (!units) return <div className="flex items-center justify-center h-48"><div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+  if (!units.length) return <p className="text-sm text-slate-500 p-4">No units with staff yet.</p>
+  const u = units.find(x => x.id === sel) ?? units[0]
+  const noPlaces = !u.managers.length && !u.sics.length && !u.supervisors.length
 
   return (
-    <div className="max-w-full mx-auto space-y-6 pb-8">
-      {/* Header */}
-      <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 flex items-center gap-6">
-        <span className="text-sm font-medium text-slate-700">{total} Employees</span>
-        <div className="flex items-center gap-4 text-xs text-slate-500">
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"/>Manager</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-400 inline-block"/>Operator</span>
-        </div>
-        <span className="text-xs text-slate-400 ml-auto">Click a manager card to expand / collapse operators</span>
-      </div>
-
-      {/* Department columns */}
-      <div className="flex gap-8 items-start justify-center flex-wrap">
-        {deptGroups.map(group => (
-          <div key={group.name} className="flex flex-col items-center min-w-[160px]">
-            {/* Department label */}
-            <div className="bg-slate-800 text-white text-xs font-bold px-4 py-1.5 rounded-full mb-4 tracking-wide">
-              {group.name}
-            </div>
-
-            {/* L2 + L1 side by side */}
-            <div className="flex gap-6 items-start justify-center">
-              {group.incharge && (
-                <div className="flex flex-col items-center">
-                  <p className="text-xs text-slate-400 mb-2 font-medium">L2 · Incharge</p>
-                  <EmpCard
-                    emp={group.incharge}
-                    collapsed={collapsed[`${group.name}-incharge`]}
-                    onToggle={() => toggle(`${group.name}-incharge`)}
-                    childCount={group.operators.length}
-                  />
-                  {!collapsed[`${group.name}-incharge`] && group.operators.length > 0 && (
-                    <div className="mt-6 flex flex-col items-center">
-                      <div className="w-px h-4 bg-slate-300" />
-                      <div className="flex gap-3 flex-wrap justify-center mt-1">
-                        {group.operators.map(op => <EmpCard key={op.id + 'i'} emp={op} />)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              {group.supervisor && (
-                <div className="flex flex-col items-center">
-                  <p className="text-xs text-slate-400 mb-2 font-medium">L1 · Supervisor</p>
-                  <EmpCard
-                    emp={group.supervisor}
-                    collapsed={collapsed[`${group.name}-supervisor`]}
-                    onToggle={() => toggle(`${group.name}-supervisor`)}
-                    childCount={group.operators.length}
-                  />
-                  {!collapsed[`${group.name}-supervisor`] && group.operators.length > 0 && (
-                    <div className="mt-6 flex flex-col items-center">
-                      <div className="w-px h-4 bg-slate-300" />
-                      <div className="flex gap-3 flex-wrap justify-center mt-1">
-                        {group.operators.map(op => <EmpCard key={op.id + 's'} emp={op} />)}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Operators only (no manager in dept) */}
-            {!group.incharge && !group.supervisor && group.operators.length > 0 && (
-              <HorizontalGroup>
-                {group.operators.map(op => <EmpCard key={op.id} emp={op} />)}
-              </HorizontalGroup>
-            )}
-          </div>
+    <div className="max-w-6xl mx-auto space-y-4">
+      <div className="flex flex-wrap gap-2">
+        {units.map(x => (
+          <button key={x.id} onClick={() => setSel(x.id)}
+            className={`px-3 py-1.5 rounded-full text-sm border ${x.id === u.id ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white border-slate-300 text-slate-700'}`}>
+            {x.name} <span className="opacity-70">({x.total})</span>
+          </button>
         ))}
       </div>
-
-      <p className="text-center text-xs text-slate-400 pt-2">
-        Organisation hierarchy based on designation assignments. Edit in Employees → Employee Profile.
+      <p className="text-xs text-slate-500">
+        {unitApproval
+          ? 'Unit-based approval is on: a request goes to any Shift Supervisor of the unit, then any SIC; Unpaid Leave then to the Unit Manager.'
+          : 'Unit-based approval is off: each person\'s own Supervisor and SIC approve (switch on Admin > Leave Types).'}
       </p>
+      {noPlaces && <div className="text-sm bg-amber-50 text-amber-800 rounded-xl p-3">Nobody in {u.name} is marked as Unit Manager, SIC or Supervisor yet. Set it in each employee record, or load the organogram from Employees.</div>}
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-5">
+        {TIER.map(([key, label, tone]) => {
+          const people = u[key] as Person[]
+          if (!people.length) return null
+          return (
+            <div key={key}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">{label} · {people.length}</p>
+              <div className="flex flex-wrap gap-2">{people.map(p => <Card key={p.id} p={p} tone={tone} />)}</div>
+            </div>
+          )
+        })}
+        <div>
+          <button onClick={() => setShowStaff(!showStaff)} className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+            Staff / operators · {u.staff.length} {showStaff ? '▾' : '▸'}
+          </button>
+          {showStaff && (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5">
+              {u.staff.map(p => (
+                <div key={p.id} className="border border-slate-200 rounded-lg px-2 py-1.5">
+                  <p className="text-xs font-medium text-slate-800 truncate">{p.name}</p>
+                  <p className="text-[10px] text-slate-400">{p.p_number}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
