@@ -57,6 +57,7 @@ export default function OrganogramModal({ onClose, onDone }: { onClose: () => vo
                 {res.applied ? 'Loaded. ' : 'Preview - nothing has changed yet. '}
                 {s.create ?? 0} new, {s.update ?? 0} updated, {s.same ?? 0} unchanged, {s.skip ?? 0} skipped.
                 {s.new_units?.length ? ` New units: ${s.new_units.join(', ')}.` : ''}
+                {s.sic_links ? ` Shared SICs: ${s.sic_links} link(s) (AMM-3 SICs also cover URUT-3, AMM-2 cover Urea-2, URUT-1 cover PM&S).` : ''}
                 {!res.applied && ' New people get gender "male", joining date 1 Jan 2026 and a temporary MPT ID when the sheet has no P.No. - correct them afterwards in their record.'}
               </div>
               {res.applied && res.logins?.length > 0 && (
@@ -85,7 +86,7 @@ export default function OrganogramModal({ onClose, onDone }: { onClose: () => vo
                         <td className="p-2">{PLACE[r.unit_role] ?? r.unit_role}</td>
                         <td className="p-2">{r.p_number || r.cadre}</td>
                         <td className="p-2"><span className={`px-2 py-0.5 rounded-full ${ACTION[r.action]?.[1]}`}>{ACTION[r.action]?.[0] ?? r.action}</span></td>
-                        <td className="p-2 text-slate-500">{(r.changes ?? []).join('; ') || r.reason || (r.matched_by ? `matched by ${r.matched_by}` : '')}{r.login ? ` · sign in: ${r.login}` : ''}</td>
+                        <td className="p-2 text-slate-500">{[...(r.changes ?? []), ...(r.also_covers?.length ? [`also covers ${r.also_covers.join(', ')}`] : [])].join('; ') || r.reason || (r.matched_by ? `matched by ${r.matched_by}` : '')}{r.login ? ` · sign in: ${r.login}` : ''}</td>
                       </tr>
                     ))}
                   </tbody>

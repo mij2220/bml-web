@@ -58,6 +58,7 @@ interface DropdownOption { id: string; name: string; }
 
 interface EditForm {
   unit_role?: string;
+  religion?: string;
   full_name: string;
   email: string;
   phone: string;
@@ -258,6 +259,7 @@ export default function EmployeeProfilePage() {
       role: employee.role || "",
       is_shared_account: (employee as any).is_shared_account ? "true" : "false",
       unit_role: (employee as any).unit_role || "",
+      religion: (employee as any).religion || "",
     });
     setSicUnits(((employee as any).sic_units ?? []).map((u: { id: string }) => u.id));
     setEditModal(true);
@@ -274,6 +276,7 @@ export default function EmployeeProfilePage() {
       }
       if (editForm.role === "manager") payload.sic_unit_ids = sicUnits;
       payload.unit_role = editForm.unit_role ?? "";
+      payload.religion = editForm.religion ?? "";
       await api.patch(`/employees/${id}/`, payload);
       await fetchEmployee();
       setEditModal(false);
@@ -438,6 +441,7 @@ export default function EmployeeProfilePage() {
                     { label: "Employee ID",   value: fmt(employee.employee_id) },
                     { label: "Email",         value: fmt(employee.email) },
                     { label: "Gender",        value: cap(employee.gender) },
+                    { label: "Religion",      value: (employee as any).religion ? cap((employee as any).religion) : "Not recorded" },
                     { label: "Date of Birth", value: fmt(employee.date_of_birth) },
                     { label: "Phone",         value: fmt(employee.phone) },
                     { label: "CNIC",          value: fmt(employee.cnic) },
@@ -677,6 +681,18 @@ export default function EmployeeProfilePage() {
                       <option value="manager">Unit Manager</option>
                     </select>
                     <p className="text-[11px] text-gray-400 mt-1">With unit-based approval on, Supervisors, SICs and the Unit Manager approve for the whole unit. Give them the Supervisor / SIC login role too.</p>
+                  </div>
+                  <div>
+                    <label className={labelCls}>Religion</label>
+                    <select value={editForm.religion ?? ""} onChange={set("religion")} className={inputCls}>
+                      <option value="">Not recorded</option>
+                      <option value="muslim">Muslim</option>
+                      <option value="christian">Christian</option>
+                      <option value="hindu">Hindu</option>
+                      <option value="sikh">Sikh</option>
+                      <option value="other">Other</option>
+                    </select>
+                    <p className="text-[11px] text-gray-400 mt-1">Holidays marked for one religion (e.g. 26 Dec for Christians) apply only to people of that religion.</p>
                   </div>
                   <div>
                     <label className={labelCls}>L1 Supervisor</label>

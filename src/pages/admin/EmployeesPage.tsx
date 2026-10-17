@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { getEmployees } from '../../api/employees'
 import AddEmployeeModal from './AddEmployeeModal'
 import OrganogramModal from './OrganogramModal'
-import { Search, Users, UserCheck, UserX, Plus, Download, Network } from 'lucide-react'
+import ReligionModal from './ReligionModal'
+import { Search, Users, UserCheck, UserX, Plus, Download, Network, BookUser } from 'lucide-react'
 import { downloadCSV } from '../../utils/tableUtils'
 import { useAuth } from '../../hooks/useAuth'
 import type { Employee } from '../../types'
@@ -34,6 +35,7 @@ export default function EmployeesPage() {
   const [total, setTotal] = useState(0)
   const [showAdd, setShowAdd] = useState(false)
   const [showOrg, setShowOrg] = useState(false)
+  const [showRel, setShowRel] = useState(false)
   const [deptFilter, setDeptFilter] = useState('')
   const [departments, setDepartments] = useState<string[]>([])
   const [sortKey, setSortKey] = useState<string | null>(null)
@@ -187,6 +189,14 @@ export default function EmployeesPage() {
         )}
         {isHR && (
         <button
+          onClick={() => setShowRel(true)}
+          className="flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 hover:bg-slate-50 font-medium flex-shrink-0"
+        >
+          <BookUser size={14} /> <span className="hidden md:inline">Load religion list</span>
+        </button>
+        )}
+        {isHR && (
+        <button
           onClick={() => setShowAdd(true)}
           className="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold px-3 md:px-4 py-2 rounded-lg transition-colors flex-shrink-0"
         >
@@ -315,6 +325,7 @@ export default function EmployeesPage() {
         </div>
       )}
       {showOrg && <OrganogramModal onClose={() => setShowOrg(false)} onDone={() => load()} />}
+      {showRel && <ReligionModal onClose={() => setShowRel(false)} onDone={() => load()} />}
       {showAdd && (
         <AddEmployeeModal
           onClose={() => setShowAdd(false)}
