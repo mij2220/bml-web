@@ -154,7 +154,8 @@ export default function ApplyLeavePage() {
     if (!endDate) e.end_date = "End date is required";
     if (startDate && endDate && endDate < startDate) e.end_date = "End date must be after start date";
     if (reason.trim().length < 5) e.reason = "Reason must be at least 5 characters";
-    if (selectedBalance && workingDays && workingDays > selectedBalance.remaining_days)
+    // Unpaid leave has no balance (the server does not check one either)
+    if (selectedType?.is_paid !== false && selectedBalance && workingDays && workingDays > selectedBalance.remaining_days)
       e.balance = `Only ${selectedBalance.remaining_days} days remaining`;
     if (!contact.trim()) e.contact = "Contact number is required";
     if (!address.trim()) e.address = "Address during leave is required";
@@ -299,7 +300,9 @@ export default function ApplyLeavePage() {
             <option value="">— Select leave type —</option>
             {leaveTypes.map(lt => {
               const bal = balances.find(b => b.leave_type === lt.id);
-              const label = bal
+              const label = !lt.is_paid
+                ? `${lt.name} (unpaid - no balance needed)`
+                : bal
                 ? `${lt.name} (${bal.remaining_days}/${bal.allocated_days} days remaining)`
                 : `${lt.name} (${lt.is_paid ? "Paid" : "Unlimited"})`;
               return <option key={lt.id} value={lt.id}>{label}</option>;
@@ -377,7 +380,7 @@ export default function ApplyLeavePage() {
               </svg>
               <p className="text-sm text-blue-700 font-medium">
                 {workingDays} working {workingDays === 1 ? "day" : "days"}
-                {selectedBalance && <span className="text-blue-500 font-normal"> · {selectedBalance.remaining_days}/{selectedBalance.allocated_days} available</span>}
+                {selectedBalance && selectedType?.is_paid !== false && <span className="text-blue-500 font-normal"> · {selectedBalance.remaining_days}/{selectedBalance.allocated_days} available</span>}
               </p>
             </div>
           )}
