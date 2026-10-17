@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import api from '../../api/client'
 
-type Holiday = { id: string; date: string; name: string; counts_as_gh: boolean; is_optional: boolean }
+type Holiday = { id: string; date: string; name: string; counts_as_gh: boolean; is_optional: boolean; religion: string }
+
+/** Engro, 17 Oct 2026: a religion-based holiday (e.g. 26 Dec for Christians) is only
+ *  for people of that religion (set in the employee record or Employees > Load religion list). */
+const RELIGIONS: [string, string][] = [['', 'Everyone'], ['christian', 'Christians only'], ['hindu', 'Hindus only'],
+  ['sikh', 'Sikhs only'], ['muslim', 'Muslims only'], ['other', 'Other religions only']]
 
 const msgOf = (e: any) => e?.response?.data?.message || 'Something went wrong. Please try again.'
 
@@ -11,7 +16,7 @@ const msgOf = (e: any) => e?.response?.data?.message || 'Something went wrong. P
 export default function GazettedHolidaysLeavePage() {
   const [year, setYear] = useState(new Date().getFullYear())
   const [rows, setRows] = useState<Holiday[] | null>(null)
-  const [f, setF] = useState({ date: '', name: '' })
+  const [f, setF] = useState({ date: '', name: '', religion: '' })
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -29,7 +34,7 @@ export default function GazettedHolidaysLeavePage() {
     try {
       await api.post('/gazetted-holidays/', f)
       setMsg({ text: `${f.name} added.`, ok: true })
-      const y = Number(f.date.slice(0, 4)); setF({ date: '', name: '' })
+      const y = Number(f.date.slice(0, 4)); setF({ date: '', name: '', religion: '' })
       if (y !== year) setYear(y); else load(year)
     } catch (e) { setMsg({ text: msgOf(e), ok: false }) } finally { setBusy(false) }
   }
@@ -40,23 +45,34 @@ export default function GazettedHolidaysLeavePage() {
     catch (e) { setMsg({ text: msgOf(e), ok: false }) }
   }
 
+  const setFor = async (h: Holiday, religion: string) => {
+    setMsg(null)
+    try { await api.patch(`/gazetted-holidays/${h.id}/`, { religion }); setMsg({ text: `${h.name}: saved.`, ok: true }); load(year) }
+    catch (e) { setMsg({ text: msgOf(e), ok: false }) }
+  }
+
   const input = 'w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500'
   return (
     <div className="max-w-3xl mx-auto space-y-4">
       <p className="text-sm text-slate-600 bg-emerald-50 border border-emerald-100 rounded-xl p-3">
         Staff who work on a gazetted holiday get one compensatory day (CD). Their Supervisor or SIC adds it
-        from the person's <b>Leave Balances</b> in Employees.
+        from the person's <b>Leave Balances</b> in Employees. A holiday marked for one religion
+        (e.g. 26 December for Christians) applies only to people recorded with that religion.
       </p>
       <div className="flex items-center gap-2">
         <button className="p-2 rounded-lg hover:bg-slate-100" onClick={() => setYear(year - 1)} aria-label="Previous year"><ChevronLeft size={18} /></button>
         <h2 className="text-lg font-bold">{year}</h2>
         <button className="p-2 rounded-lg hover:bg-slate-100" onClick={() => setYear(year + 1)} aria-label="Next year"><ChevronRight size={18} /></button>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200 p-4 grid grid-cols-1 sm:grid-cols-[170px_1fr_auto] gap-3 items-end">
+      <div className="bg-white rounded-2xl border border-slate-200 p-4 grid grid-cols-1 sm:grid-cols-[170px_1fr_170px_auto] gap-3 items-end">
         <label className="text-xs font-medium text-slate-600">Date
           <input type="date" className={input + ' mt-1'} value={f.date} onChange={e => setF({ ...f, date: e.target.value })} /></label>
         <label className="text-xs font-medium text-slate-600">Holiday
           <input className={input + ' mt-1'} value={f.name} placeholder="e.g. Pakistan Day" onChange={e => setF({ ...f, name: e.target.value })} /></label>
+        <label className="text-xs font-medium text-slate-600">For
+          <select className={input + ' mt-1'} value={f.religion} onChange={e => setF({ ...f, religion: e.target.value })}>
+            {RELIGIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select></label>
         <button disabled={!f.date || !f.name.trim() || busy} onClick={add}
           className="bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-semibold px-4 py-2 rounded-lg">Add</button>
       </div>
@@ -69,6 +85,10 @@ export default function GazettedHolidaysLeavePage() {
               <div key={h.id} className="flex items-center gap-3 px-4 py-2.5 text-sm">
                 <span className="w-40 font-semibold">{new Date(h.date + 'T00:00:00').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                 <span className="flex-1">{h.name}</span>
+                <select aria-label={`Who ${h.name} is for`} value={h.religion ?? ''} onChange={e => setFor(h, e.target.value)}
+                  className={`border rounded-lg px-2 py-1 text-xs ${h.religion ? 'border-purple-300 bg-purple-50 text-purple-800' : 'border-slate-200 text-slate-600'}`}>
+                  {RELIGIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
                 <button aria-label={`Remove ${h.name}`} className="p-2 rounded-lg hover:bg-red-50 text-red-600" onClick={() => remove(h)}><Trash2 size={15} /></button>
               </div>
             ))}
